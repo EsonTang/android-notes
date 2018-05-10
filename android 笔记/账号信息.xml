@@ -1,0 +1,214 @@
+https://github.com/Trinea/android-open-project/tree/master/繁體中文版 
+SVN：
+ 用户名：zhaoxicheng
+ 密码：zhxch2739
+ 
+ 锁卡密码： 81266901
+提单的账号密码：eService 
+http://eportal.mediatek.com/eservice/pub/EServicePubApp.html
+用户名:  bestonetech-1 密码:    byt123  PDF password : 0362712159
+用户名:  tangxuntech-2 密码:    gild20170101 tx123   PDF password : 9224595030
+
+eService
+http://eservice.mediatek.com/eservice-portal/dashboard
+bestonetech-1 \ byt888 \ PDF : 0362712159
+tangxuntech-2 \ tx123  \ PDF : 9224595030
+
+展讯online
+https://isupport.spreadtrum.com/iSupport/apply/login#*redirecturl*=down 
+账号：sintave
+密码：Sentejie08
+byt:
+byt/BestTech123
+
+IMEI号：35385706611999*
+FOTA
+bestone/best_8xe2
+用户名：fwq 密码：123456
+http://mg.adups.cn/ota/loginUser.do#
+win+R mstsc
+351613089386283
+
+
+https://fex.mediatek.com/ 
+用户名:bestonetech-1
+密码:mtk&byt888
+tangxuntech-2 
+tx&sim888 
+sim1@tangxuntech.com
+tx2018
+
+FEX
+https://fex.mediatek.com/ （先用 eservice 密码，然后对应 online 密码）
+cclist
+mtkeservice@mediatek.com 
+https://transfer.mediatek.com/ 
+
+ (现在用这个)
+cclist
+mtkeservice@mediatek.com
+
+
+fex:
+bestonetech-1 
+mtk&byt888
+mtkeservice@mediatek.com
+
+tangxuntech-2 
+tx&sim888
+
+testpengchenghui
+Ss5201314
+Ss84828440 
+
+MTK Online:
+https://sso.mediatek.com/eai/Login.aspx
+uid:lai_junyuan@bestonetech.com.cn
+pwd:byt123
+MTK On-Line 新密码：
+Account: lai_junyuan@bestonetech.com.cn
+Password: byt888
+
+账户 : wangdong@boruizhiheng.com
+密码：PRIZE_123456
+用户名：sim1@tangxuntech.com
+密码：gild20050701
+
+online 可直接在主界面进入 FEX
+https://sso.mediatek.com/eai/Login.aspx 
+
+lai_junyuan@bestonetech.com.cn \ byt888
+sim1@tangxuntech.com \ gild20170101
+
+find . -type f -name "*" | xargs grep "bluetooth.HostName" >../a.txt
+find ./ -name "*.*"|xargs grep -inr "bluetooth.HostName" --color
+80编译命令：
+  source build/envsetup.sh
+  lunch
+  make -j8 2>&1 | tee build.log
+
+查找文件在当前目录下的位置
+find / -name AudioYusuPolicyManager.cpp
+
+根据部分文件名称查找
+find /etc -name '*srm*' 
+mm -B
+mmm
+mmma
+
+find / -amin -10 # 查找在系统中最后10分钟访问的文件
+　　find / -atime -2 # 查找在系统中最后48小时访问的文件
+　　find / -empty # 查找在系统中为空的文件或者文件夹
+　　find / -group cat # 查找在系统中属于 groupcat的文件
+　　find / -mmin -5 # 查找在系统中最后5分钟里修改过的文件
+　　find / -mtime -1 #查找在系统中最后24小时里修改过的文件
+　　find / -nouser #查找在系统中属于作废用户的文件
+　　find / -user fred #查找在系统中属于FRED这个用户的文件
+./mk v92_v9h-zhongxing_utok update-mmi;
+./mk v92_82_kk update-api;
+./mk -o=TARGET_BUILD_VARIANT=user v92_82_kk n;
+./mk -o=TARGET_BUILD_VARIANT=user v92_82_kk otapackage;
+source cp_v92_82_kk_bin.sh
+账号信息：
+ID：zhaotang
+PWD：zht3922
+
+svn 37 平台代码查看和下载可先用账号 fae1/fae1
+
+source mk_buildenv.sh  【这个是选择编译的 jdk 的版本，1是6，2是7，M平台选择 jdk7】
+2
+source update_mmi.sh public_UI2【这个是拷贝mmi分支到 alps下，先拷贝public，然后public_UI2】
+source update_drv.sh public_UI 【这个是拷贝drv分支到 alps下，repos\目录下面的是驱动分支】
+source build/envsetup.sh
+lunch tx6735m_65u_m0_l9  【这个是选择编译的工程】
+make update-api; 【这个是编译 api】
+make -j32 2>&1 | tee build.log 【这个是 new 】
+拷贝指令：
+source copy_bin.sh 【拷贝bin包，打包】
+tx6735m_65u_m0_l9  【工程，实际out下面的关键路径】
+L9_I               【modem名称，拷贝db，ap文件】
+
+grep -rn 'smsPreferenceActivity' packages/apps/(查找方法)
+
+
+mmm 之前，要在android.mk中的LOCAL_DEX_PREOPT := false去掉
+dear all：
+各位的编译服务器，经常卡，编译慢，或者编译版本的时候出现莫名其妙的报错，请按照以下方式处理。
+ 
+定期重启编译服务器，并清理log ，
+当然必须注意，当前服务器是否有其他同事在使用
+特别 13，14同时作为编译服务器，18 后续会作为Fota 服务器
+ 
+step：
+1：su fwq  密码：byt879   切换到 fwq 系统账户
+2: cd /usr
+3: ll
+4: sudo rm -rf log*     清除 log
+5: sudo reboot          重启
+
+切换jdk
+1.su fwq
+2.sudo update-alternatives --config java
+3.sudo update-alternatives --config javac
+
+编辑服务器默认语言：
+su fwq
+cat /etc/default/locale 
+sudo vi /etc/default/locale 
+l
+行位
+Esc
+:q!/:qw
+ 
+目前公司总共有两个VPN帐号
+1.           -- 此帐号一般为为CTS专用，请各位同事尽量使用byt654321（此帐号可同时连接4个）
+帐号:byt123456
+密码:cl123456
+2.
+帐号:byt654321
+密码:cl123456
+VPN服务器地址：
+//192.168.13.60/MT6580/ALPS-MP-M0.MP1-V2.34_BEST6580_WE_M/tags/Bmobile_AX685_TIGO_SV_V002_20160705/trunk
+
+kk-4.4/L-5.1/M-6.0/N-7.0
+\alps\build\core\Version_defaults.mk中PLATFORM_VERSION := 6.0
+
+用户名：lishengjian、zhaotang、liufeng
+密码：123456
+禅道：http://192.168.13.120/zentao/user-login.html   
+http://192.168.13.120:81/zentao/user-login-L3plbnRhby8=.html
+                            
+社保信息：电脑号：643479089 Zt1601523436
+邮件
+http://mail.bestonetech.com.cn/index.php?retid=244258c137393de3c&unautologin=1
+                                      
+80N:svn://192.168.9.104/MT6580N/ALPS-MP-N0.MP2-V1_BEST6580_WE_N/trunk                    
+字体图片：http://www.iconfont.cn/plus
+制作actionBar网址：http://jgilfelt.github.io/android-actionbarstylegenerator/#name=zt&compat=appcompat&theme=light&actionbarstyle=transparent&texture=0&hairline=1&neutralPressed=1&backColor=fb3%2C100&secondaryColor=fff%2C100&tabColor=33B5E5%2C100&tertiaryColor=F2F2F2%2C100&accentColor=33B5E5%2C100&cabBackColor=FFFFFF%2C100&cabHighlightColor=33B5E5%2C100
+Android button制作器：http://angrytools.com/android/button/
+http://androidblog.cn/tools/#grepcode ：Android工具
+https://segmentfault.com/a/1190000006794884(录制视频)
+Android 常用 Manager(https://gold.xitu.io/entry/5752c346df0eea00644e98d9)
+yahoo:s3144735766@yahoo.com  JABNASGR2016
+http://grepcode.com/search?query=&start=0&entity=method&n=(代码)
+SwissArmyKnife(http://p.codekk.com/detail/Android/android-notes/SwissArmyKnife)
+https://github.com/a-voyager/AutoInstaller(自动安装apk)
+https://developers.google.cn/(Android学习）
+http://romannurik.github.io/AndroidAssetStudio/index.html（工具）
+http://www.androidcat.com/?step=1&view=CatFragment（学习）
+http://tool.lu/coderunner/（代码执行）
+http://www.itlanbao.com/preview.aspx#6,0（代码查看）
+http://appxcode.com/index.php?con=index&act=search&keyword=&cid=5&sort=0
+http://codpoe.me/2016/08/08/translucent-statusbar/（状态栏）
+http://www.oschina.net/（开源社区）
+http://gityuan.com/2015/06/28/adb-notes/(学习网)
+https://gold.xitu.io/welcome/android
+http://blog.csdn.net/tangxuankai/article/details/51038124
+http://blog.csdn.net/garment1991/article/details/49873461
+http://jijiaxin89.com/2015/08/30/Android-s-Runtime-Permission/(权限)
+https://my.oschina.net/ibuwai/blog/702747(加权限)
+https://my.oschina.net/SundyCigoOS/blog/536996（修改FrameWork源码实现动态隐藏导航栏，实现全屏）
+http://gityuan.com/page2/
+http://blog.csdn.net/innost?viewmode=contents
+http://yifeiyuan.me/
+http://blog.csdn.net/imuhao/article/details/51702243

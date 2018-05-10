@@ -1,0 +1,3 @@
+相关的补丁都有合上 可以参考 MediaTek On-Line> 
+Quick Start> CTS测试 快速入门 >Google Security Patch
+查询相关的patch ID 

@@ -1,0 +1,116 @@
+系统：Ubuntu
+ndk版本：android-ndk-r12b-linux-x86_64.zip
+
+1， 解压 android-ndk-r12b-linux-x86_64.zip 这个压缩包，如
+   /home/byt/android-ndk-r12b 
+		其中有个 可执行文件  ndk-build，用于生产 so 库
+
+		
+2，配置环境变量，或者配置工作空间		
+	su root
+	sudo gedit /etc/profile
+	最后两行加上如下配置
+		NDKROOT=/home/byt/android-ndk-r12b
+		export PATH=$NDKROOT:$PATH
+
+3，编写 jni 程序
+	在当前目录，新建 jni 目录 /home/byt/android-ndk-r12b/jni
+	
+	新建一个包 com.lxy.led
+	在src/com.lxy.led 下新建类 LedConfig.java
+	LedConfig.java内容
+	
+			public class LedConfig {
+				public native void cmdLeds(int cmd, int arg);
+			}
+	
+	先在 LedConfig.java 目录执行 javac 生成 class 文件，否则不好生成 h 文件
+	src/com.lxy.led> javac LedConfig.java
+		会在同目录生成 LedConfig.class
+		
+		然后再 src 目录执行 javah 生成 .h文件
+	src>javah com.lxy.led.LedConfig
+		会在同目录生成com_lxy_led_LedConfig.h
+		将com_lxy_led_LedConfig.h拷贝到 jni 目录
+	
+4，jni 目录内容如下、
+	Andriod.mk 配置生成so库
+	com_lxy_led_LedConfig.h 头文件
+	com_lxy_led_LedConfig.c 实现方法的c文件（名称可以任意）
+	
+	Android.mk 
+		LOCAL_PATH := $(call my-dir)  
+		include $(CLEAR_VARS)  
+		LOCAL_MODULE := LedUtils  
+		LOCAL_SRC_FILES := LedConfig.c 
+		LOCAL_LDLIBS += -llog
+		include $(BUILD_SHARED_LIBRARY)  
+	
+	
+	com_lxy_led_LedConfig.c
+		#include "com_lxy_led_LedConfig.h"
+		#include <jni.h>
+		#include <fcntl.h>
+		#include <stdio.h>
+		#include <sys/stat.h>
+		#include <sys/ioctl.h>
+		#include <unistd.h>
+		#include <stdlib.h>
+		#include <android/log.h>
+		#define LOG_TAG "IreLed"
+		#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG,LOG_TAG,__VA_ARGS__)
+		#define LOGI(...) __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
+
+		JNIEXPORT void JNICALL Java_com_lxy_led_LedConfig_cmdLeds
+			(JNIEnv * env, jobject thiz, jint cmd, jint arg)  
+		{  
+			LOGI("cmdleds file open failed:  %d\n", fd);
+		}  
+	
+	
+5，编译 so 库
+	在/home/byt/android-ndk-r12b 目录执行 ./ndk-build
+		会生成LedUtils.so 到 libs 目录（里面有各种平台的so库）
+	
+	
+6，使用 LedUtils.so
+	必须要有同包名，同类名的文件  src/com.lxy.led 下新建类 LedConfig.java
+	其次使用之前要先倒库
+		static {  
+			System.loadLibrary("LedUtils"); 注意这个地方不要加 lib
+		}  
+	然后调用了
+	
+	在as编译生成.so库
+	1.配置环境：local.properties加上ndk.dir=E\:\\NDK\\android-ndk-r14b
+	 gradle.properties加上android.useDeprecatedNdk=true
+	2.在.java加上 static {
+        System.loadLibrary ("LedJni");
+    }
+
+    public static native void cmdLeds(int cmd, int arg);
+    build.gradle加上 ndk {
+            moduleName "LedJni"
+        }
+        sourceSets {
+            main {
+                jniLibs.srcDirs  'src/main/libs'
+                jni.srcDirs = ['libs']
+            }
+        }
+        然后再rebuild-project，直到生成build/intermediates/classes
+   3.javah命令生成.h文件
+   进入src/main 目录：javah -d jni -classpath ..\..\build\intermediates\classes\debug 包名+类名，生成包名+类名.h，然后写.c或者.cpp文件
+   4.在jni目录下，写android.mk{LOCAL_PATH := $(call my-dir)  
+  
+include $(CLEAR_VARS)  
+  
+LOCAL_MODULE := LedJni
+LOCAL_SRC_FILES := jni.c或者jni.cpp
+  
+include $(BUILD_SHARED_LIBRARY)  
+执行ndk-build，会在libs生成各种libLedJni.so文件
+	
+	
+	
+	

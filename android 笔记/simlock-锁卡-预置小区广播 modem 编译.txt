@@ -1,0 +1,125 @@
+/custom/service/nvram/custom_nvram_sec.h  锁卡个数 #define SML_MAX_SUPPORT_CAT_N       
+/custom/service/nvram/custom_nvram_sec.c 锁卡开关 SML_STATE_UNLOCK
+/custom/service/nvram/nvram_cust_pack.c 小区广播开关  [0x01, 0x01, /* CB setting - ON */====打开]   [0x00, 0x01,/* CB setting - ON */====关闭]
+/custom/modem/common/ps/custom_nvram_extra.c 永久解锁开关
+/service/nvram/src/nvram_io.c 恢复出厂设置后是否重新锁卡
+
+定制解锁密码
+Keyguard\src\com\mediatek\keyguard\Telephony\KeyguardSimPinPukView.java
+
+永久解锁/custom/modem/common/ps/custom_nvram_extra.c
+kal_bool sml_Verify( sml_cat_enum cat,.....
+    ....
+    if(kal_mem_cmp(catkey->key,key,len)==0)
+    {
+
+        result = KAL_TRUE;
+    result = KAL_TRUE;
++    meta->state = SML_STATE_UNLOCK;
+    ....
+
+恢复出厂设置后，能够重新上锁 (NVRAM_CATEGORY_IMPORTANT_L4 有的话，不上锁，没有的话，上锁)
+/service/nvram/src/nvram_io.c
+kal_bool nvram_reset_data_items(......
+     .....
+-     nvram_reset_category(NVRAM_CATEGORY_ALL, NVRAM_CATEGORY_IMPORTANT | NVRAM_CATEGORY_CALIBRAT | NVRAM_CATEGORY_IMPORTANT_L4);
++     nvram_reset_category(NVRAM_CATEGORY_ALL, NVRAM_CATEGORY_IMPORTANT | NVRAM_CATEGORY_CALIBRAT);
+     .....
+
+46000,    "CHINA MOBILE",     "CN"  中国移动TD 
+46001,    "CHN-CUGSM",        "CN"  中国联通 
+46002,    "CHINA MOBILE",     "CN"  中国移动GSM
+46003,    "CHINA TELECOM",    "CN"  中国电信CDMA
+
+
+修改锁卡的 mcc，mnc 文件 \repos\s811_a_ax630_tigo\custom_nvram_sec.c
+{{SML_STATE_LOCK,SML_RETRY_COUNT_N_CAT,0,7},     /* Category N */  ======7 表示锁卡的个数；SML_STATE_LOCK  表示锁卡；SML_STATE_UNLOCK 表示不锁卡
+				/* Category N code */====================
+        {0x70,0x40,0x2F,=================704 02x
+         0x70,0x60,0x3F,=================706 03x
+         0x70,0x80,0x2F,=================708 02x
+         0x70,0x80,0x20,=================708 020
+         0x74,0x40,0x4F,=================744 04x
+         0x73,0x60,0x3F,=================736 03x
+         0x73,0x21,0x11},	===============732 111
+       
+
+kk 编译锁卡modem
+xienanhai@fwq-desktop:~/znh/72_kk_modem/BESTONE72_CWET_KK_GPRS_HSPA_MOLY.WR8.W1315.MD.WG.MP$
+输入命令：./xbuild.sh s811_a_ax630_tigo new
+编译之后：在当前目录会生成新的modem文件夹： s811_a_ax630_tigo_kk_hspa
+
+将新的modem文件夹拷贝到
+alps\mediatek\custom\common\modem
+
+使用该modem，需要再\alps\mediatek\config\s811_a_72_kk\projectconfig.mk文件中配置：
+CUSTOM_MODEM=s811_a_ax630_tigo_kk_hspa
+
+L/M modem 编译方法
+MT6572_L版本modem路径： 
+svn://192.168.13.130/MT6571/ALPS.L1.MP6.V1_BEST6572_WET_L/BEST6572_WET_L_GPRS_HSPA_MOLY.WR8.W1449.MD.WG.MP.V5 
+编译请按以下步骤执行：
+1.source update_modem.sh
+1、先执行update_modem_pro.sh脚本，输入repos下面的项目名，将repos下面project分支差异部分拷贝到modem代码中
+2、执行./make.sh [Project makefile name] new 
+   如：./make.sh "BEST6572_WET_L_HSPA.mak" new （"BEST6572_WET_L_HSPA.mak" 是modem目录make下面的相应的.mak文件名。此处不包含.mak的字串）
+   以及可能要输入 drvicer-mmi 分支名称
+   
+3：执行上述之后，请使用AP端的modemRenameCopy.pl脚本，执行：
+   ./device/mediatek/build/build/tools/modemRenameCopy.pl [modem的路径] [Project makefile name]
+   说明：此处的[Project makefile name]是modem目录make下面的相应的.mak文件名。此处不包含.mak的字串。
+   如：./../s4505_L_1023/alps/device/mediatek/build/build/tools/modemRenameCopy.pl ./ BEST6572_WET_L_HSPA 
+4：执行完上述步骤之后，modem的根目录下将生成temp_modem文件夹，将此文件夹里面的文件全部拷贝到AP端相应的modem文件夹下，重命名成对应项目的modem即可。
+5：modem 拷贝到目录 alps\vendor\mediatek\proprietary\custom\s505_72_l\modem
+   名称命名规范一点如 s505_b1b8_beru_72_l_hspa      。
+   并且 修改projectconfig.mk中 CUSTOM_MODEM = s505_b1b8_beru_72_l_hspa
+
+
+
+
+5. 预置小区广播的方法
+ 
+(1) modem端预置 (推荐)：
+custom\service\nvram\nvram_data_items.c 预设channel：
+COMMON_NVRAM_EF_CB_CH_INFO_DEFAULT[] 里的这一段
+#ifndef __CMAS__
+0xFF, 0xFF, /* CH 1 , for example: chanel 50 is 0x00, 0x32 */
+0xFF, 0xFF, /* CH 2 */
+……
+改为：
+#ifndef __CMAS__
+0x03, 0x8F, /* CH 1 , for example: chanel 911 */ 
+0x03, 0x97, /* CH 2 , for example: chanel 919 */ 
+……
+注意：(1)#ifndef __CB_CHANNEL_ONLY_STORED_IN_NVRAM__ 和else 中 都有define
+COMMON_NVRAM_EF_CB_CH_INFO_DEFAULT[]两个数组里面的都改下。
+(2)这样修改的话，如果是双卡项目，那么双卡预置的内容是一样的，如果需求双卡预置不一样的默认值，那么需进行如下改动：
+①请为NVRAM_EF_CB_CH_INFO_LID添加NVRAM_ATTR_MULTI_DEFAULT属性，如下：
+\custom\service\nvram\nvram_data_items.c(不同平台路径可能不同)
+{
+NVRAM_EF_CB_CH_INFO_LID,
+NVRAM_EF_CB_CH_INFO_TOTAL,
+NVRAM_EF_CB_CH_INFO_SIZE,
+NVRAM_NORMAL(COMMON_NVRAM_EF_CB_CH_INFO_DEFAULT),
+NVRAM_CATEGORY_USER,
+NVRAM_ATTR_FACTORY_RESET | NVRAM_ATTR_MULTI_DEFAULT,//此处添加NVRAM_ATTR_MULTI_DEFAULT属性
+"MT46",
+VER(NVRAM_EF_CB_CH_INFO_LID)
+},
+②修改COMMON_NVRAM_EF_CB_CH_INFO_DEFAULT[]，将原有的默认值放在一个{}中，然后复制一份，放{}中，放后面即可，中间用逗号分隔。举例如下：
+\custom\service\nvram\nvram_data_items.c(不同平台路径可能不同)
+如原有的是
+COMMON_NVRAM_EF_CB_CH_INFO_DEFAULT[]=
+{
+……
+}
+那么请修改为
+COMMON_NVRAM_EF_CB_CH_INFO_DEFAULT[]=
+{
+{……},//SIM1
+{……} //SIM2，复制过来后，请在相应位置对预置参数进行修改。
+}
+如果对于双卡预置不同默认值仍有疑问，可以参考我司DCC上面的Modem_NVRAM_to_Customer.pptx中的NVRAM Customize章节，具体是page17~page22，主要是在page20页。
+(3)不管双卡预置相同默认值的改法，还是双卡预置不同默认值的改法，改完后，如果采用firmware upgrade升级可以直接升级，
+如果是Download Only或者OTA升级，还需将NVRAM_EF_CB_CH_INFO_LID_VERNO(\interface\service\nvram\nvram_editor_data_item.h)在原有的基础上加1，
+如原有是"000"，请修改为"001"，才可以生效。

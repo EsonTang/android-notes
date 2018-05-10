@@ -1,0 +1,393 @@
+如何让主菜单的背景显示为壁纸:
+https://onlinesso.mediatek.com/Pages/FAQ.aspx?list=SW&FAQID=FAQ06210
+//默认语音信箱号码
+$src=$src_cust/frameworks/base/core/res/res/values/config.xml
+$dest=frameworks/base/core/res/res/values/config.xml
+
+//默认紧急号码
+$src=$src_cust/vendor/mediatek/proprietary/external/EccList/ecc_list.xml
+$dest=vendor/mediatek/proprietary/external/EccList/ecc_list.xml
+//Launcher3 背景改为黄色
+$src=$src_cust/packages/apps/Launcher3/res/drawable/quantum_panel_shape.xml
+$dest=packages/apps/Launcher3/res/drawable/quantum_panel_shape.xml
+$src=$src_cust/packages/apps/Launcher3/res/values/colors.xml
+$dest=packages/apps/Launcher3/res/values/colors.xml
+
+http://blog.csdn.net/lyjit/article/details/50905399
+在Launcher隐藏主菜单中某个应用(http://blog.csdn.net/sergeycao/article/details/17550391)
+
+https://onlinesso.mediatek.com/Pages/FAQ.aspx?List=SW&FAQID=FAQ03426(launcher)
+https://onlinesso.mediatek.com/Pages/FAQ.aspx?list=SW&FAQID=FAQ10474(隐藏apk)
+https://onlinesso.mediatek.com/Pages/FAQ.aspx?list=SW&FAQID=FAQ14425(如何让Launcher3的主菜单和桌面支持循环滑动？)
+https://onlinesso.mediatek.com/Pages/FAQ.aspx?list=SW&FAQID=FAQ10400(如何在小部件列表中隐藏某个widget或者shortcut？)
+https://onlinesso.mediatek.com/Pages/FAQ.aspx?list=SW&FAQID=FAQ14512(https://onlinesso.mediatek.com/Pages/FAQ.aspx?list=SW&FAQID=FAQ14512)
+https://onlinesso.mediatek.com/Pages/FAQ.aspx?list=SW&FAQID=FAQ08614(如何在setting中的休眠模式下添加永不休眠功能？)
+https://onlinesso.mediatek.com/Pages/FAQ.aspx?list=SW&FAQID=FAQ08845(怎样延长锁屏界面显示时间？)
+frameworks\base\packages\settingsprovider\res\values\defaults.xml
+<integer name="def_screen_off_timeout">60000</integer>
+https://onlinesso.mediatek.com/Pages/FAQ.aspx?list=SW&FAQID=FAQ17750(小区广播问题总结)
+https://onlinesso.mediatek.com/Pages/FAQ.aspx?list=SW&FAQID=FAQ18313(使用16bit 或7bit 编码，都需要替换特殊字符去掉帽子)
+如何确认一个应用程序的安装位置(https://onlinesso.mediatek.com/Pages/FAQ.aspx?list=SW&FAQID=FAQ03045)
+L 版本如何将第三方so库打包到apk(https://onlinesso.mediatek.com/Pages/FAQ.aspx?list=SW&FAQID=FAQ13697)
+【Build and Make】L版本常见编译问题汇总(https://onlinesso.mediatek.com/Pages/FAQ.aspx?list=SW&FAQID=FAQ14830)
+如何修改apk版本号(格式类似为4.0.4-eng.root.1235877699)(https://onlinesso.mediatek.com/Pages/FAQ.aspx?list=SW&FAQID=FAQ03719)
+http://blog.csdn.net/kyoky_xxj/article/details/9152797(Android的APK反编译)
+LK阶段如何实现开机震动(https://onlinesso.mediatek.com/Pages/FAQ.aspx?List=SW&FAQID=FAQ13305)
+https://onlinesso.mediatek.com/Pages/FAQ.aspx?list=SW&FAQID=FAQ06791（关闭闹钟后，在关机状况下闹钟仍会执行）
+如何隐藏状态栏处的G、3G图标不显示(https://onlinesso.mediatek.com/Pages/FAQ.aspx?List=SW&FAQID=FAQ12227)
+如何去掉状态栏G、3G图标(https://onlinesso.mediatek.com/Pages/FAQ.aspx?List=SW&FAQID=FAQ11708)
+TARGET_ROOT_OUT：表示根文件系统out/target/product/xxxxx/root。
+TARGET_OUT：表示system文件系统out/target/product/xxxx/system。
+TARGET_OUT_DATA：表示data文件系统out/target/product/xxxx/data。
+TARGET_OUT_SHARED_LIBRARIES：表示out/target/product/xxxx/system/lib
+TARGET_OUT_APPS：表示out/target/product/xxxx/system/app
+ANDROID_PRODUCT_OUT：out/target/product/xxxx/
+TARGET_OUT_JAVA_LIBRARIES：out/target/product/xxxx/system/framework
+名称	
+说明
+
+croot	
+切换到源码树的根目录
+m	
+在源码树的根目录执行 make
+mm	
+Build 当前目录下的模块
+mmm	
+Build 指定目录下的模块
+
+cgrep	
+在所有 C/C++ 文件上执行 grep
+jgrep	
+在所有 Java 文件上执行 grep
+resgrep	
+在所有 res/*.xml 文件上执行 grep
+godir	
+转到包含某个文件的目录路径
+printconfig	
+显示当前 Build 的配置信息
+add_lunch_combo	
+在 lunch 函数的菜单中添加一个条目
+m：编译所有的模块 
+mm：编译当前目录下的模块，当前目录下要有Android.mk文件 
+mmm：编译指定路径下的模块，指定路径下要有Android.mk文件 
+
+
+M版本如何快速build kernel、lk 和 preloader(https://onlinesso.mediatek.com/Pages/FAQ.aspx?List=SW&FAQID=FAQ17423)
+开发阶段，修改kernel code，不new android 如何编译快速生效(https://onlinesso.mediatek.com/Pages/FAQ.aspx?List=SW&FAQID=FAQ06176)
+设置--语音控制语言--如何设置默认语言(https://onlinesso.mediatek.com/Pages/FAQ.aspx?List=SW&FAQID=FAQ09425)
+https://onlinesso.mediatek.com/Pages/FAQ.aspx?List=SW&FAQID=FAQ13697(L 版本如何将第三方so库打包到apk)
+如何手动对apk进行签名？(https://onlinesso.mediatek.com/Pages/FAQ.aspx?List=SW&FAQID=FAQ17553)
+如何分别配置卡1卡2的默认铃声(https://onlinesso.mediatek.com/Pages/FAQ.aspx?List=SW&FAQID=FAQ09288)
+修改手机号码归属地(https://onlinesso.mediatek.com/Pages/FAQ.aspx?List=SW&FAQID=FAQ10342)
+如何修改出厂默认日期和默认时区(https://onlinesso.mediatek.com/Pages/FAQ.aspx?List=SW&FAQID=FAQ04318)
+如何修改情景模式的默认值(https://onlinesso.mediatek.com/Pages/FAQ.aspx?List=SW&FAQID=FAQ08581)
+如何分别设置前置摄像头与后置摄像头的默认预览大小？(https://onlinesso.mediatek.com/Pages/FAQ.aspx?List=SW&FAQID=FAQ10328)
+如何去除Launcher默认的google search bar？(https://onlinesso.mediatek.com/Pages/FAQ.aspx?List=SW&FAQID=FAQ04350)
+在Launcher界面上锁再解锁后，如何回到上锁前的界面？(https://onlinesso.mediatek.com/Pages/FAQ.aspx?List=SW&FAQID=FAQ05709)
+快速双击home键回到Launcher3的桌面默认页(https://onlinesso.mediatek.com/Pages/FAQ.aspx?List=SW&FAQID=FAQ11206)
+首次开机会发现状态栏的数据链接图标会自动打开然后又消失(https://onlinesso.mediatek.com/Pages/FAQ.aspx?List=SW&FAQID=FAQ12429)
+滑动锁屏状态下如何禁止下拉状态栏？（https://onlinesso.mediatek.com/Pages/FAQ.aspx?List=SW&FAQID=FAQ03858）
+如何远端调试framework和APK？https://onlinesso.mediatek.com/Pages/FAQ.aspx?list=SW&FAQID=FAQ04306
+短按耳机键暂停/播放FM功能的实现(https://onlinesso.mediatek.com/Pages/FAQ.aspx?list=SW&FAQID=FAQ07289)
+在手机中预置联系人/Service Number(https://onlinesso.mediatek.com/Pages/FAQ.aspx?list=SW&FAQID=FAQ07470)
+如何关闭来电号码归属地？(https://onlinesso.mediatek.com/Pages/FAQ.aspx?list=SW&FAQID=FAQ09200)
+【Call】如何实现简单的来电自动接听功能(https://onlinesso.mediatek.com/Pages/FAQ.aspx?list=SW&FAQID=FAQ02904)
+如何修改“拨出电话未接通时，默认背光灯长亮”(https://onlinesso.mediatek.com/Pages/FAQ.aspx?list=SW&FAQID=FAQ10034)
+如何开启或隐藏Navigation Bar导航栏(https://onlinesso.mediatek.com/Pages/FAQ.aspx?list=SW&FAQID=FAQ03065)
+user版本时，设置里，如何将“开发者选项”选项显示出来(https://onlinesso.mediatek.com/Pages/FAQ.aspx?list=SW&FAQID=FAQ07781)
+设置——提示音和通知——铃声音量，播放时按HOME键或返回键，播放不停止(https://onlinesso.mediatek.com/Pages/FAQ.aspx?list=SW&FAQID=FAQ17876)
+
+以默认功能为MTP为例，可在main.mk中，使
+   ADDITIONAL_DEFAULT_PROPERTIES += persist.sys.usb.config=mtp
+   
+   https://onlinesso.mediatek.com/Pages/FAQ.aspx?list=SW&FAQID=FAQ17472(灭屏后亮屏没有看到锁屏)
+   https://onlinesso.mediatek.com/Pages/FAQ.aspx?list=SW&FAQID=FAQ12880(锁屏界面如何延长亮屏到灭屏的等待时间)
+    用这个方法改变apk的名字
+   try{
+        		if(info.activityInfo.packageName.equals("com.google.android.apps.photos")&& 
+        				Locale.getDefault().getLanguage().startsWith("es"))  
+        		{
+        			pref.setTitle("Fotos");
+        		}else{
+        			pref.setTitle(label);
+        		}
+        	}catch(Exception e){}  
+        	https://onlinesso.mediatek.com/Pages/FAQ.aspx?List=SW&FAQID=FAQ15108(如何修改Fast Dormancy的屏亮/灭 inactivity timer 值)
+        	
+        	【Contacts Data】 先10位匹配，若是无法匹配，则换成7位匹配（https://onlinesso.mediatek.com/Pages/FAQ.aspx?list=SW&FAQID=FAQ11094）
+        	隐藏Navigationbar：
+<bool name=“config_showNavigationBar”>false</bool>
+将这个配置信息修改为false即可。
+ 
+显示Navigationbar：
+ <bool name=“config_showNavigationBar”>true</bool>
+将这个配置信息修改为true即可。
+
+如何在状态栏上增加一个icon（https://onlinesso.mediatek.com/Pages/FAQ.aspx?list=SW&FAQID=FAQ03087）
+Alarmas, Android, DCIM, Descargas, Películas, Mtklog, Música, Notificaciones, Imágenes, Podcast, Sonidos
+Grabación
+Capturas de pantalla
+Registro telefónico
+La grabación de FM
+
+
+
+if (!SystemProperties.getBoolean("ro.mtk_gemini_support", false)) {
+                        removeTile = true;
+                    }单卡隐藏，双卡不隐藏
+                    https://onlinesso.mediatek.com/Pages/FAQ.aspx?List=SW&FAQID=FAQ03426(当系统存在多个Launcher时，如何设置开机自动进入默认的Launcher？)
+                    
+                     android.telephony.TelephonyManager tm = (android.telephony.TelephonyManager) getContext().getSystemService(Context.TELEPHONY_SERVICE);
+		String mccmnc = tm.getSimOperator();
+		Log.d("wangxk"," Voice mail start mccmnc = "+mccmnc);这个可以打logo那个运营商是多少？
+		恢复出厂设置或者第一次开机，先闪壁纸再显示开机向导(https://onlinesso.mediatek.com/Pages/FAQ.aspx?list=SW&FAQID=FAQ19059)
+		当系统存在多个Launcher时，如何设置开机自动进入默认的Launcher(https://onlinesso.mediatek.com/Pages/FAQ.aspx?List=SW&FAQID=FAQ09535)
+		GTS 3.0_r4 com.google.android.xts.permissions.DefaultPermissionGrantPolicyTest -- testDefaultGrants fail(https://onlinesso.mediatek.com/Pages/FAQ.aspx?List=SW&FAQID=FAQ17611)
+		安装多个音乐播放器时，如何将某个播放器设为默认播放器(https://onlinesso.mediatek.com/Pages/FAQ.aspx?List=SW&FAQID=FAQ17570)
+		如何使文件系统中的录音文件可以选择音乐播放器播放(https://onlinesso.mediatek.com/Pages/FAQ.aspx?List=SW&FAQID=FAQ13067)
+		如何做到在静音模式下音乐也被静音？https://onlinesso.mediatek.com/Pages/FAQ.aspx?List=SW&FAQID=FAQ10500(试了不行)
+		如何让某个APK里面的图片能够作为壁纸使用(https://onlinesso.mediatek.com/Pages/FAQ.aspx?List=SW&FAQID=FAQ17430)
+		如何客制化Launcher的主菜单图标？(https://onlinesso.mediatek.com/Pages/FAQ.aspx?List=SW&FAQID=FAQ04295)
+		在视频播放器中选择某个视频播放时，直接启动默认的视频播放器(https://onlinesso.mediatek.com/Pages/FAQ.aspx?List=SW&FAQID=FAQ09829)
+		如何修改长按LatinIME键盘中某个字母时弹出框的内容（https://onlinesso.mediatek.com/Pages/FAQ.aspx?List=SW&FAQID=FAQ18281）
+		  final String[][] MIME_MapTable={   
+            //{后缀名，MIME类型}   
+            {".3gp",    "video/3gpp"},   
+            {".apk",    "application/vnd.android.package-archive"},   
+            {".asf",    "video/x-ms-asf"},   
+            {".avi",    "video/x-msvideo"},   
+            {".bin",    "application/octet-stream"},   
+            {".bmp",    "image/bmp"},   
+            {".c",  "text/plain"},   
+            {".class",  "application/octet-stream"},   
+            {".conf",   "text/plain"},   
+            {".cpp",    "text/plain"},   
+            {".doc",    "application/msword"},   
+            {".docx",   "application/vnd.openxmlformats-officedocument.wordprocessingml.document"},   
+            {".xls",    "application/vnd.ms-excel"},    
+            {".xlsx",   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"},   
+            {".exe",    "application/octet-stream"},   
+            {".gif",    "image/gif"},   
+            {".gtar",   "application/x-gtar"},   
+            {".gz", "application/x-gzip"},   
+            {".h",  "text/plain"},   
+            {".htm",    "text/html"},   
+            {".html",   "text/html"},   
+            {".jar",    "application/java-archive"},   
+            {".java",   "text/plain"},   
+            {".jpeg",   "image/jpeg"},   
+            {".jpg",    "image/jpeg"},   
+            {".js", "application/x-javascript"},   
+            {".log",    "text/plain"},   
+            {".m3u",    "audio/x-mpegurl"},   
+            {".m4a",    "audio/mp4a-latm"},   
+            {".m4b",    "audio/mp4a-latm"},   
+            {".m4p",    "audio/mp4a-latm"},   
+            {".m4u",    "video/vnd.mpegurl"},   
+            {".m4v",    "video/x-m4v"},    
+            {".mov",    "video/quicktime"},   
+            {".mp2",    "audio/x-mpeg"},   
+            {".mp3",    "audio/x-mpeg"},   
+            {".mp4",    "video/mp4"},   
+            {".mpc",    "application/vnd.mpohun.certificate"},          
+            {".mpe",    "video/mpeg"},     
+            {".mpeg",   "video/mpeg"},     
+            {".mpg",    "video/mpeg"},     
+            {".mpg4",   "video/mp4"},      
+            {".mpga",   "audio/mpeg"},   
+            {".msg",    "application/vnd.ms-outlook"},   
+            {".ogg",    "audio/ogg"},   
+            {".pdf",    "application/pdf"},   
+            {".png",    "image/png"},   
+            {".pps",    "application/vnd.ms-powerpoint"},   
+            {".ppt",    "application/vnd.ms-powerpoint"},   
+            {".pptx",   "application/vnd.openxmlformats-officedocument.presentationml.presentation"},   
+            {".prop",   "text/plain"},   
+            {".rc", "text/plain"},   
+            {".rmvb",   "audio/x-pn-realaudio"},   
+            {".rtf",    "application/rtf"},   
+            {".sh", "text/plain"},   
+            {".tar",    "application/x-tar"},      
+            {".tgz",    "application/x-compressed"},    
+            {".txt",    "text/plain"},   
+            {".wav",    "audio/x-wav"},   
+            {".wma",    "audio/x-ms-wma"},   
+            {".wmv",    "audio/x-ms-wmv"},   
+            {".wps",    "application/vnd.ms-works"},   
+            {".xml",    "text/plain"},   
+            {".z",  "application/x-compress"},   
+            {".zip",    "application/x-zip-compressed"},   
+            {"",        "*/*"}     
+        };   
+                    	移动定制机（OP01）三方apk保存图片后，在gallery中不能正常显示（含图）(https://onlinesso.mediatek.com/Pages/FAQ.aspx?List=SW&FAQID=FAQ14889)
+                	
+               L   修改方法如下：
+ 以com.carrot.iceworld这个apk为例，如果不希望它发送出来的sms显示出来，需要做以下修改：
+
+SmsAppliaction.java -> shouldWriteMessageForPackage(String packageName, Context context)
+函数开始的地方增加以下语句：
+if((packageName != null) && packageName.equals("com.carrot.iceworld")){
+    return false;
+}
+TextView tv = new TextView( this );
+// SimpleDateFormat 类的格式化字符：
+// G 年代指示符(AD) 
+// y 年(yy:10 y/yyy/yyyy:2010)
+// M 月(M:1 MM:01 MMM:Jan MMMM:January MMMMM:J) 
+// L 独立月(L:1 LL:01 LLL:Jan LLLL:January LLLLL:J) 
+// d 一个月中的第几日(只需此一个字符，输出如：10)
+// h 时(只需此一个字符，输出如：上/下午 1 ~ 12) 
+// H 时(只需此一个字符，输出如：0 ~ 23) 
+// k 一天中的第几个小时(只需此一个字符，输出如：1 ~ 24)
+// K 时(上/下午 0 ~ 11)
+// m 一小时中的第几分(只需此一个字符，输出如：30)
+// s 一分钟中的第几秒(只需此一个字符，输出如：55)
+// S 毫秒(只需此一个字符，输出如：978)
+// E 星期几(E/EE/EEE:Tue, EEEE:Tuesday, EEEEE:T)
+// c 独立星期几(c/cc/ccc:Tue, cccc:Tuesday, ccccc:T)
+// D 一年中的第几天(只需此一个字符，输出如：189)
+// F 一月中的第几个星期几(只需此一个字符，输出如：2)
+// w 一年中的第几个星期(只需此一个字符，输出如：27)
+// W 一月中的第几个星期(只需此一个字符，输出如：1)
+// a 上/下午标记符(只需此一个字符，输出如：AM/PM)
+// Z 时区(RFC822)(Z/ZZ/ZZZ:-0800 ZZZZ:GMT-08:00 ZZZZZ:-08:00)
+// z 时区(z/zz/zzz:PST zzzz:Pacific Standard Time)
+// 要忽略的字符都要用单引号('')括住！
+SimpleDateFormat sdf = new SimpleDateFormat("'Date'yyyy-MM-dd'Time'HH:mm:ss'Z'");
+
+// 注意此处用的是 java.util.Date 类，而非 java.sql.date 类，切莫用错，下面会崩溃！
+java.util.Date qDate = null;
+try 
+{
+    // 实际要分析的日期时间字符串当中的要忽略的字符以在上面用单引号括住指出了!
+    qDate = sdf.parse( "Date2009-09-26Time09:30:00Z" );
+    tv.append( qDate.toGMTString() + "\n\n" );
+    tv.append( qDate.toLocaleString() + "\n\n" );
+    tv.append( qDate.toString() + "\n\n" );
+} 
+catch ( Exception e ) 
+{
+    e.printStackTrace();
+}
+
+tv.append( sdf.format( qDate ) );
+
+setContentView( tv );
+
+][Input Method]如何让密码输入的字符停留一段时间后再转换为*号(https://onlinesso.mediatek.com/Pages/FAQ.aspx?List=SW&FAQID=FAQ16330)
+
+SMS内容强制用7bit编码[Orange operator](https://onlinesso.mediatek.com/Pages/FAQ.aspx?List=SW&FAQID=FAQ10993)
+
+ 启动第三方apk public static final String BOOHEE_PACKAGE_NAME = "com.boohee.*";
+
+/**
+ * 启动薄荷App
+ * @param context
+ */
+public static void launchBoohee(Context context) {
+    // 判断是否安装过App，否则去市场下载
+    if (isAppInstalled(context, BOOHEE_PACKAGE_NAME)) {
+        context.startActivity(context.getPackageManager().getLaunchIntentForPackage(BOOHEE_PACKAGE_NAME));
+    } else {
+        goToMarket(context, BOOHEE_PACKAGE_NAME);
+    }
+}
+
+/**
+ * 检测某个应用是否安装
+ * 
+ * @param context
+ * @param pkgName
+ * @return
+ */
+public static boolean isAppInstalled(Context context, String packageName) {
+    try {
+        context.getPackageManager().getPackageInfo(packageName, 0);
+        return true;
+    } catch (NameNotFoundException e) {
+        return false;
+    }
+}
+
+/**
+ * 去市场下载页面
+ */
+public static void goToMarket(Context context, String packageName) {
+    Uri uri = Uri.parse("market://details?id=" + packageName);
+    Intent goToMarket = new Intent(Intent.ACTION_VIEW, uri);
+    try {
+        context.startActivity(goToMarket);
+    } catch (ActivityNotFoundException e) {
+    }
+}
+
+if(docDisplayName.equalsIgnoreCase("Camera") && Locale.getDefault().getLanguage().startsWith("es")){
+           		 docDisplayName=context.getResources().getString(R.string.Camera);
+           		 title.setText(docDisplayName);
+           		 title.setTextSize(10);
+           	}else if(docDisplayName.equalsIgnoreCase("Screenshots") && Locale.getDefault().getLanguage().startsWith("es")){
+           		docDisplayName=context.getResources().getString(R.string.Screenshots);
+          		    title.setText(docDisplayName);
+          		     title.setTextSize(10);
+           	}else{
+           		 title.setText(docDisplayName);
+           	}
+安装多个搜索应用后，长按Home键启动默认的搜索应用(https://onlinesso.mediatek.com/Pages/FAQ.aspx?list=SW&FAQID=FAQ18055)
+
+Fiddler 抓包工具总结(http://blog.csdn.net/qq_21445563/article/details/51017605)
+
+http://www.jcodecraeer.com/plus/list.php?tid=16&TotalResult=1860&PageNo=1(学习网）
+获取未安装的APK图标、版本、包名、名称、是否安装、安装、打开(http://blog.csdn.net/u011904605/article/details/52126382)
+总结系列-Android的文件系统(http://blog.csdn.net/oyangyujun/article/details/47973193)
+[Android]应用程序无SDCard安装APK(http://blog.csdn.net/sodino/article/details/6549082)
+[Android]实现静默安装APK的两种方法(http://blog.csdn.net/sodino/article/details/6238818)
+ [Android]获取未安装的APK图标(原创非转帖)(http://blog.csdn.net/sodino/article/details/6215224)
+  [Android]APK程序卸载二次确认的实现(http://blog.csdn.net/sodino/article/details/6158659)
+http://blog.csdn.net/xxbs2003/article/details/19167331( Android--通知之Notification)
+http://blog.csdn.net/cqupt_chen/article/details/9011685?locationNum=3&fps=1(开机自动安装apk)
+http://www.jcodecraeer.com/a/anzhuokaifa/androidkaifa/2016/1007/6660.html(2016安卓开发资料大全)\
+锁屏上显示Activity(http://www.race604.com/activity-over-keyguard/)
+http://mp.weixin.qq.com/s?__biz=MzI4MzE2MTQ5Mw==&mid=2649752130&idx=1&sn=3633d802fad94c9a466592451413b276#rd(Android调用系统相机和相册-填坑篇)
+http://blog.csdn.net/zed_faker/article/details/52231215(在设置加个永不休眠)
+http://blog.csdn.net/qq_30796789/article/details/53466550（MTK）
+【Notification】屏蔽特定应用的通知提示(http://blog.csdn.net/okm6666/article/details/51029359)
+安卓Activity和dialog中屏蔽返回键和home键(https://my.oschina.net/u/1420982/blog/188184)
+http://www.cnblogs.com/mosthink/p/5524758.html(双击事件)
+http://sunfusheng.com/android/2016/07/30/navigationbar.html(自定义 ShareView 之 NavigationBar 适配)
+Android屏蔽Home按键(http://blog.csdn.net/u012169524/article/details/51147518)
+http://blog.csdn.net/xch520xx/article/details/51910335(http://blog.csdn.net/xch520xx/article/details/51910335)
+http://blog.csdn.net/michael_yt/article/details/51516733
+http://46aae4d1e2371e4aa769798941cef698.devproxy.yunshipei.com/Gaugamela/article/category/6383486/2
+http://www.wxtlife.com/page/3/
+Android 实现锁屏的较完美方案（https://geminiwen.xyz/2015/08/11/android-screen-lock/）
+修改diaolog style
+frameworks/base/core/java/com/android/internal/app/AlertController.java
+默认日期
+NetworkTimeUpdateService.java
+
+
+http://blog.csdn.net/tangxuankai/article/details/51038124（Launcher 一些修改）
+https://github.com/venshine/AndroidNote#%E5%BF%AB%E9%80%9F%E5%BC%80%E5%8F%91
+https://github.com/lizixian18/AppLock（applock）
+http://mirrors.neusoft.edu.cn/android/repository/(下载sdk)
+http://color-themes.com/?view=index(as风格)
+https://ydmmocoo.github.io/2016/06/28/Android-Studio%E6%8F%92%E4%BB%B6%E6%95%B4%E7%90%86/(as插件)
+http://www.jianshu.com/p/eaf21915592f（QC8916 修改系统默认字体（Android 5.0））
+http://www.jianshu.com/p/441863cbc9ef（消除Android 5.0 ~ 7.1.1原生系统中感叹号或叉号）
+https://github.com/aiyuan1996（一些apk）
+https://github.com/RSB4760/apq8016_packages_apps_Launcher3/commit/0dd504c971ad34b53d14b69e8ca13a37e36f7f2b(未读的角标)
+https://github.com/ZechinFeature（mtk修改）
+https://developer.android.google.cn/studio/archive.html#android-studio-3-0?utm_source=androiddevtools.cn&utm_medium=website（as下载）
+https://plugins.jetbrains.com/plugin/6954-kotlin（kt插件下载）
+http://m.blog.csdn.net/weixin_37077539/article/details/78391392（Android MTK N 平台上如何添加双卡铃声功能）
+https://github.com/Tic-pf/Launcher3-N-Folder（自动化整理文件夹）
+https://github.com/haran2003/Launcher3/commit/d097f475e8c2e7b7af8403ef89f25c373808bc51（加入角标进文件夹）
+ https://github.com/huachunli/Launcher3/tree/master/src/com/android/launcher3
+ https://github.com/rogersb11/packages_apps_Launcher3/commit/326153470ccdb975b796567b4e95a6952417713d(LAUncher)
+ http://www.jianshu.com/u/c3c6111e13d2（mtk方案简书）
+ https://github.com/lizixian18/AppLock（appLock）
+ http://m.blog.csdn.net/blog/index?username=long375577908&categoryid=6803778(sim运行商问题)
+ https://github.com/a750183047/MobileSafe（手机管家）
+ http://www.jianshu.com/u/22310adb59a8（study android 知识）
+http://blog.csdn.net/huangchangsheng123/article/details/79240471（状态栏显示网速）
+        

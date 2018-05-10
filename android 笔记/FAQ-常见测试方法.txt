@@ -1,0 +1,16 @@
+
+接收的推送信息和语音信息未显示在Wappush messages/Voice Messages列表中，列表里仍显示No messages。
+WAP信息 : 发送 D 至 12520 即可收到WAP信息
+Voice Messages：首先sim卡开通语音信箱服务，然后打电话给测试机不接，过一会按语音提示留言，然后测试机就会收到一个以短信形式的语音留言信息
+
+WIFI: cml 密码：cml.1204；lxq 密码：lxq1204
+VPN: 服务地址：us7.jssj17.com 用户名：byt654321 密码：cl123456
+
+1042117630qq@gmail.com
+20160727li
+
+liuchaonanniuniu@gmail.com
+liuchaonan888
+
+unionetest2014@gmail
+unione123456

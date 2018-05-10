@@ -1,0 +1,3048 @@
+android短信和广播机制
+	Context.sendBroadcast()发送的是普通广播，所有订阅者都有机会获得并进行处理。
+	Context.sendOrderedBroadcast()发送的是有序广播，系统会根据接收者声明的优先级别按顺序逐个执行接收者，
+	BroadcastReceiver.abortBroadcast() 如果广播被前面的接收者终止，后面的接收者就再也无法获取到广播。
+	sendStickyBroadcast() 意思只要是如果发送广播之后才执行registerReceiver(BroadcastReceiver,IntentFilter).这个方法依然可以接受到。
+	换句话说，在ReceiverActivity里是通过代码来注册Recevier而不是在Manifest里面注册的。需要加BROADCAST_STICKY权限，否则会抛SecurityException
+ 
+解决wifi出现NVRAM WAENING：Err=0x10
+	alps\packages\apps\Settings\src\com\android\settings\wifi\WifiSettings.java
+		private void updateAccessPoints() {
+			。。。。
+			final List<ScanResult> results = mWifiManager.getScanResults();
+    	if (results != null) {
+      	for (ScanResult result : results) {
+    	  	// Ignore hidden and ad-hoc networks.
+          if (result.SSID == null || result.SSID.length() == 0 ||
+          	result.capabilities.contains("[IBSS]")|| result.SSID.contains("NVRAM WARNING:")) {
+            continue;
+          }
+				}
+ 		}
+ 
+修改su程序对临时用户的限制，默认su只允许root和shell用户执行
+	vi system/extras/su/su.c 注释掉语句块
+		/* 
+		myuid = getuid(); 
+		if (myuid != AID_ROOT && myuid != AID_SHELL) { 
+			fprintf(stderr,”su: uid %d not allowed to su\n”, myuid); 
+			return 1; 
+		}
+		*/
+		
+修改默认时区
+	对应时区可以在这个文件找：\frameworks\base\core\res\res\xml\time_zones_by_country.xml
+	build\tools\buildinfo.sh	 
+		非洲 echo "persist.sys.timezone=Africa/Cairo"
+		上海 echo "persist.sys.timezone=Asia/Shanghai"
+		
+默认语言下的默认日期格式，
+	例：将中文环境下的日期格式修改为"yyyy年 M月 d日，EEE"（EEE是星期）
+	打开文件Donottranslate-cldr.xml (frameworks\base\core\res\res\values-zh-rcn)	找到numeric_date_format这项，修改成下面这样：
+	<string name="numeric_date_format">yyyy年 M月 d日，EEE</string>
+
+默认12 24小时制 
+ 	\frameworks\base\packages\SettingsProvider\src\com\android\providers\settings\DatabaseHelper.java
+	loadSetting(stmt, Settings.System.TIME_12_24, "12");
+  
+修改蓝牙名，
+	mediatek\config\common\custom.conf
+		bluetooth.HostName = G-TiDE E77
+	alps\device\mediatek\common\ custom.conf
+		bluetooth.HostName = xxxx
+	alps\device\generic\common\bluetooth\ bdroid_buildcfg.h
+		#define BTM_DEF_LOCAL_NAME   "xxxxx"
+
+修改wifi直连
+	alps\frameworks\base\wifi\java\android\net\wifi\p2p\WifiP2pService.java
+		private String getPersistedDeviceName()
+FAQ011：客户定制的型号和名称修改
+
+ssid 名称，WIFI热点名称及密码(密码长度至少8位)修改：
+	alps\device\mediatek\common\ -custom.conf
+		wlan.SSID = xxxx
+	alps\frameworks\opt\net\wifi\service\java\com\android\server\wifi\ WifiApConfigStore.java
+		private void setDefaultApConfiguration() {
+			……
+			config.preSharedKey = xxxxxxxx;
+			//randomUUID.substring(0, 8) + randomUUID.substring(9,13);modify by byt
+			…….
+		}
+		
+Wifi直连名称：
+	alps\frameworks\base\packages\SettingsProvider\src\com\android\providers\settings\ DatabaseHelper.java
+		private void loadGlobalSettings(SQLiteDatabase db) {
+			……
+			loadSetting(stmt, Settings.Global.WIFI_P2P_DEVICE_NAME, “xxxxxxx”);//add by byt
+			// M: Load MTK added Global providers before Android M.mUtils.loadCustomGlobalSettings(stmt);
+			……
+		}
+		
+	注在TX6753M0和BEST6580M0上已经把wifi热点和密码这个功能提取出来了，只需要修改： alps\build\tools\ buildinfo.sh
+	echo "ro.byt.wifi_password=xxxxxxxx "
+	echo "ro.byt.wifi_p2pname=xxxx"
+
+CD-ROM的名称
+	可以在网上下载一个PowerISO，用这个打开
+	alps\device\mediatek\common\iAmCdRom.iso 修改下文件名就可以了
+	
+相片详情信息model，maker
+	alps\packages\apps\Gallery2\src\com\android\gallery3d\ui\DialogDetailsView.java
+		setDetails 函数添加int key = detail.getKey();
+    	if (details.hasUnit(key)) {
+      	value = String.format("%s: %s %s", DetailsHelper.getDetailsName(context, key), value, context.getString(details.getUnit(key)));
+        /*bestone start add by lyl, for modify detail in picture*/
+      } else if(MediaDetails.INDEX_MAKE==key){
+       	value = String.format("%s: %s", DetailsHelper.getDetailsName(context, key), "Titan600EVO");
+      } else if(MediaDetails.INDEX_MODEL==key){
+       	value = String.format("%s: %s", DetailsHelper.getDetailsName(context, key), "Titan600EVO");
+        /*bestone end add by lyl*/
+      .....
+                
+修改手机默认字体大小
+	Android系统中在Settings->Display->Font Size设置系统字体大小，默认的系统字体大小为普通(Normal)，如果修改默认值，可以在下面这个文件中进行修改：
+	如:把默认字体要改为超大，把fontScale值改为1.15f，然后重新build framework.jar这个模块即可；
+	alps/frameworks/base/core/java/android/content/res/Configuration.java
+		public void setToDefaults() {
+  		fontScale = 1.15f;  //normal value is 1
+    	mcc = mnc = 0;
+	注意：
+		Settings中系统的字体大小，在/packages/apps/Settings/res/values/arrays.xml文件中的”entryvalues_font_size”这个tag中定义
+	Small:0.9
+	Normal:1.0
+	Large:1.1
+	Extra Large:1.15
+
+默认打开数据连接和语言随sim卡改变
+ 	alps\mediatek\frameworks\base\op\java\com\mediatek\op\telephony\TelephonyExt.java
+
+修改语言不随sim卡改变
+	alps\frameworks\opt\telephony\src\java\com\android\internal\telephony\MccTable.java
+		updateMccMncConfiguration{....
+  		//setLocaleFromMccIfNeeded(context, mcc);
+  
+获取屏幕高度宽度问题
+	DisplayMetrics metrics;
+	getWindowManager().getDefaultDisplay().getMetrics(metrics);
+	metrics.widthPixels           屏幕宽
+	metrics.heightPixels          屏幕高
+	metrics.density               屏幕密度
+
+号码10位匹配，7位匹配，如何修改最小号码匹配位数MIN_MATCH? 
+	alps\frameworks\base\telephony\java\android\telephony\PhoneNumberUtils.java   		static final int MIN_MATCH = 10;
+	alps\mediatek\frameworks\base\op\java\com\mediatek\op\telephony\PhoneNumberExt.java    	public int getMinMatch() {.......	}
+	alps\external\sqlite\android\OldPhoneNumberUtils.cpp		#ifdef MTK_CTA_DFO_SUPPORT
+
+重点，只要修改以下两个文件就可以了：
+	调整MIN_MATCH涉及三支文件：
+	alps\frameworks\base\telephony\java\android\telephony\PhoneNumberUtils.java   		
+			static final int MIN_MATCH = 10;
+	alps\packages/providers/ContactsProvider/src/com/android/providers/contacts/ContactsDatabaseHelper.java    
+   		改成以下方法内容
+   		public void buildFallbackPhoneLookupAndContactQuery(SQLiteQueryBuilder qb, String number) {
+			String minMatch = PhoneNumberUtils.toCallerIDMinMatch(number);
+			StringBuilder sb = new StringBuilder();
+			appendPhoneLookupTables(sb, minMatch, true);
+			/**M: append this table for some query */
+			appendPresenceAndStautsTable(sb);
+			qb.setTables(sb.toString());
+			sb = new StringBuilder();
+			appendPhoneLookupSelection(sb, null, null);
+			qb.appendWhere(sb.toString());
+    	}
+    
+修改设置滑动解锁时没紧急拨号
+	alps\frameworks\base\packages\Keyguard\src\com\android\keyguard\EmergencyButton.java
+  		protected void onFinishInflate() {
+        super.onFinishInflate();
+        mLockPatternUtils = new LockPatternUtils(mContext);
+        mPowerManager = (PowerManager) mContext.getSystemService(Context.POWER_SERVICE);
+        setOnClickListener(new OnClickListener() {
+            public void onClick(View v) {
+                takeEmergencyCallAction();
+            }
+        });
+        int phoneState = KeyguardUpdateMonitor.getInstance(mContext).getPhoneState();
+        
+        /// M: Save secure query result here, when lockscreen is created, secure result should
+        /// stay unchanged @{
+        /*Modifed by bestone pfj 20141224 for slide unlock display emergency button begin*/
+        //mIsSecure = mLockPatternUtils.isSecure();
+        mIsSecure = true;
+        /*Modifed by bestone pfj 20141224 for slide unlock display emergency button end*/
+        /// @}
+        
+        updateEmergencyCallButton(phoneState);
+	}
+	
+锁屏界面显示紧急拨号按钮
+	alps\frameworks\base\packages\Keyguard\ext\src\com\mediatek\keyguard\ext\ DefaultEmergencyButtonExt.java
+		@Override
+		public boolean showEccInNonSecureUnlock() {
+			if (DEBUG) {
+        Log.d(TAG, "showEccInNonSecureUnlock return true");
+    	}
+    return true;
+	}
+
+	Android判断网络连接是否可用，WiFi、移动数据是否打开等
+	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>  
+
+//判断网络连接是否可用  gprs
+	public static boolean isNetworkAvailable(Context context) {  
+    ConnectivityManager connectivityManager = (ConnectivityManager) context  .getSystemService(Context.CONNECTIVITY_SERVICE);  
+    if (connectivityManager == null) {  
+    } else {  
+        NetworkInfo[] networkInfo = connectivityManager.getAllNetworkInfo();  
+        if (networkInfo != null&&networkInfo.length>0) {  
+            for (int i = 0; i < networkInfo.length; i++) {  
+                if (networkInfo[i].getState() == NetworkInfo.State.CONNECTED) {  
+                    return true;  
+                }  
+            }  
+        }  
+    }  
+    return false;  
+}  
+
+判断是否打开蓝牙 bt
+	boolean isBtOn(Context mContext){
+		BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
+		boolean enabled = false;
+		if(btAdapter != null){
+			if(btAdapter.isEnabled()){
+				enabled = true;
+			}else{
+				enabled = false;
+			}
+		}
+		return enabled;
+	}
+打开蓝牙 bt	
+	void openBt(Context mContext){
+		BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
+		if(btAdapter != null){
+			btAdapter.enable();
+		}
+	}
+判断wifi 是否打开	
+	boolean isWifiOn(Context mContext){
+		android.net.ConnectivityManager connectivityManager = (android.net.ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);  
+		android.net.NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();  
+	    if (networkInfo != null && networkInfo.getType() == android.net.ConnectivityManager.TYPE_WIFI) {  
+	        return true;  
+	    }  
+	    return false;  
+	}
+打开wifi	
+	void openWifi(Context mContext){
+		try{
+			WifiManager wifiManager = (WifiManager)mContext.getSystemService(Context.WIFI_SERVICE);
+			wifiManager.setWifiEnabled(true);
+		}catch(Exception e){
+		}
+	}
+判断gps是否打开	
+	boolean isGpsOn(Context mContext){
+        LocationManager locationManager = (LocationManager)mContext.getSystemService(Context.LOCATION_SERVICE);
+        boolean gps = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+        boolean network = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+        if(gps || network){
+            return true;
+        }
+        return false;
+	}
+打开gps	
+	void openGps(Context mContext){
+		try{
+          	Intent intent = new Intent("com.android.settings.location.MODE_CHANGING");
+            int mode = android.provider.Settings.Secure.LOCATION_MODE_HIGH_ACCURACY;
+            intent.putExtra("NEW_MODE", mode);
+            mContext.sendBroadcast(intent, android.Manifest.permission.WRITE_SECURE_SETTINGS);
+            Settings.Secure.putInt(mContext.getContentResolver(), Settings.Secure.LOCATION_MODE, mode);
+          }catch(Exception e){
+          }
+	}
+  
+//判断移动数据是否打开  
+public static boolean isMobile(Context context) {  
+    ConnectivityManager connectivityManager = (ConnectivityManager) context  
+            .getSystemService(Context.CONNECTIVITY_SERVICE);  
+    NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();  
+    if (networkInfo != null && networkInfo.getType() == ConnectivityManager.TYPE_MOBILE) {  
+        return true;  
+    }  
+    return false;  
+}  
+
+
+Provision 初始化，注意gms的setupwidzard 有可能重载此app
+	private static final String SCREEN_OFF_TIMEOUT = "screen_off_timeout";
+	private static final String SCREEN_BRIGHTNESS_MODE = "screen_brightness_mode";
+	Settings.Global.putInt(getContentResolver(), Settings.Global.DEVICE_PROVISIONED, 1); 开机向导完成标识
+	Settings.Secure.putInt(getContentResolver(), Settings.Secure.USER_SETUP_COMPLETE, 1);开机向导完成标识
+	Settings.System.putInt(getContentResolver(), SCREEN_OFF_TIMEOUT, 30000); 默认休眠时间更改
+	Settings.System.putInt(getContentResolver(), SCREEN_BRIGHTNESS_MODE, 1); 自动光感打开
+
+gps默认高精准度
+	try{
+		Intent intent = new Intent("com.android.settings.location.MODE_CHANGING");
+		int mode = android.provider.Settings.Secure.LOCATION_MODE_HIGH_ACCURACY;
+		intent.putExtra("NEW_MODE", mode);
+		sendBroadcast(intent, android.Manifest.permission.WRITE_SECURE_SETTINGS);
+		Settings.Secure.putInt(getContentResolver(), Settings.Secure.LOCATION_MODE, mode);
+	}catch(Exception e){
+	}     
+
+默认关闭开发者模式
+	loadSetting(stmt, Settings.Global.ENHANCED_4G_MODE_ENABLED, ImsConfig.FeatureValueConstants.ON); 4G model
+	loadSetting(stmt, Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0);        开发者模式
+
+打开或者关闭 wifi	
+	try{
+		WifiManager wifiManager = (WifiManager)getSystemService(WIFI_SERVICE);
+		wifiManager.setWifiEnabled(false);
+	}catch(Exception e){
+	}
+	<uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+	<uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+	
+默认休眠时间设置	
+	Settings.System.putInt(getContentResolver(),Settings.System.SCREEN_OFF_TIMEOUT, 60000);// def_screen_off_timeou value in SettingsProvider 
+		
+
+usb默认连接方式
+	以默认功能为MTP为例，可在main.mk中，以下两步要同时修改。
+		一：ADDITIONAL_DEFAULT_PROPERTIES += persist.sys.usb.config=mtp	
+		二：frameworks\base\services\usb\java\com\android\server\usb\UsbDeviceManager.java
+				//modify by lxy for defaut usb connect as MTP
+        private boolean mUsbDataUnlocked = true;
+						//modify by lxy for defaut usb connect as MTP
+						//mUsbDataUnlocked = false;					        
+						//modify by lxy for defaut usb connect as MTP
+            //setEnabledFunctions(null, false);
+默认 mtp adb debug
+	build\core\main.mk
+		ADDITIONAL_DEFAULT_PROPERTIES += persist.sys.usb.config=adb,mtp
+		ADDITIONAL_BUILD_PROPERTIES += persist.sys.usb.config=adb,mtp
+	
+默认mtp名称修改
+	/frameworks/base/media/java/android/mtp/MtpDatabase.java
+ 		private int getDeviceProperty(
+   		**** 
+   		deviceName = "Bmobile_AX1010";
+ 		}
+
+默认wifi 热点名称
+	frameworks/opt/net/wifi/service/java/com/android/server/wifi/p2p/WifiP2pServiceImpl.java
+		private String getPersistedDeviceName() {
+ 			*** 
+ 			return "AX1010";
+		}
+		
+provision 设置默认存储    
+	private void setDefaultStorePath() {
+    	StorageManager mStorageManager = (StorageManager)getSystemService(Context.STORAGE_SERVICE);
+        StorageVolume[] volumes = mStorageManager.getVolumeList(UserHandle.myUserId(), StorageManager.FLAG_FOR_WRITE);
+        for (StorageVolume volume : volumes) {
+            String path = volume.getPath();
+            String mounteState = mStorageManager.getVolumeState(path);
+            boolean isRemovable = volume.isRemovable();
+            android.util.Log.i("lxypath","A path = " + path);
+            android.util.Log.i("lxypath","A mounteState = " + mounteState);
+            android.util.Log.i("lxypath","A isRemovable = " + isRemovable);
+            if (Environment.MEDIA_MOUNTED.equals(mounteState) && isRemovable) {
+            	StorageManagerEx.setDefaultPath(path);
+            }
+        }
+    }
+	
+	
+是否需要修改默认存储器 弹出提示
+	\vendor\mediatek\proprietary\frameworks\base\storage\java\com\mediatek\storage\StorageDefaultPathDialog.java	
+	
+合并存储后，从goolge play下载的app报错问题，权限所致
+	frameworks/base/data/etc/platform.xml
+    <permission name="android.permission.WRITE_EXTERNAL_STORAGE" >
+        <group gid="sdcard_r" />
+        <group gid="sdcard_rw" />
+        <group gid="media_rw" />-----------------
+    </permission>
+
+	
+camera连接电脑名称
+	vendor/mediatek/proprietary/custom/common/hal/inc/camera_custom_exif.h
+	#define CUSTOM_EXIF_STRING_MODEL "AX1010"
+
+修改连接电脑名称，盘符名称
+ 示例为D1
+（1）alps\kernel\drivers\usb\gadget\android.c
+			#define PRODUCT_STRING "D1"
+（2）alps\kernel\drivers\usb\gadget\f_mass_storage.c
+		 snprintf(common->inquiry_string, sizeof common->inquiry_string,
+		 "%-8s%-16s%04x", cfg->vendor_name ?: "",
+		 /* Assume product name dependent on the first LUN */
+		 cfg->product_name ?: (common->luns->cdrom
+				     ? "D1"
+				     : "D1"),
+		 i);
+（3）alps\system\vold\Fat.cpp
+	   if(isInternalSd){
+	    args[3] = "-L";
+	    args[4] = "Slok D1";    // 修改外置T卡的label，注意长度不能超过11个字符
+
+		
+systemui/TelephonyIcons.java		
+可以修改定义默认的信号图标，以及信号等级的处理。
+		
+		
+只显示一个无信号提示
+	alps\frameworks\base\packages\SystemUI\src\com\android\systemui\statusbar\SignalClusterView.java
+	alps\frameworks\base\packages\SystemUI\ext\src\com\mediatek\systemui\ext\DefaultStatusBarPlugin.java
+	这是JB3 default的设计，如果要恢复两个信号图标，请参考如下方法修改：
+	1. SignalClusterViewGemini.java文件
+    public void setMobileDataIndicators(int slotId, boolean visible, IconIdWrapper[] strengthIcon,	
+		 	 。。
+       mMobileVisible[slotId] = true;//visible; 将这行的visible修改为true，也就是一直显示
+	2. DefaultStatusBarPlugin.java文件
+  	public boolean getMobileGroupVisible() {
+        return true;//false; //修改为true
+    }
+
+修改textview 里面link 所有数字，信息号码匹配12345等号码
+	alps\frameworks\base\core\java\android\text\util\Linkify.java
+				/*if ((mask & MAP_ADDRESSES) != 0) {
+            gatherMapLinks(links, text);
+        }*/
+		改为
+				/*modify by zengxiao for:12345 number */ 
+				if ((mask & PHONE_NUMBERS) != 0) {       
+            gatherLinks(links, text, Patterns.PHONE,
+                    new String[] { "tel:" },
+                    sPhoneNumberMatchFilter, sPhoneNumberTransformFilter);
+        }
+       	/*modify end*/
+        
+手机设置一层背景
+wm = (WindowManager) getApplicationContext().getSystemService("window");
+		wmParams = new WindowManager.LayoutParams();
+		wmParams.type = 2010;
+		wmParams.flags |= 8;
+		wmParams.x = 0;
+		wmParams.y = 0;
+		wmParams.width = WindowManager.LayoutParams.MATCH_PARENT;
+		wmParams.height = WindowManager.LayoutParams.MATCH_PARENT;
+		wmParams.format = 1;
+		wmParams.screenOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
+		wm.addView(view, wmParams);
+		
+google play 进不了 报错
+	frameworks/base/services/java/com/android/server/pm/PackageManagerService.java
+		@@ -5938,7 +5938,12 @@ public class PackageManagerService extends IPackageManager.Stub {
+                             + ")");
+                 }
+             }
++       // TChip ZJ Add START:for Phoneshy Permission
++               if (pkg.packageName.equals("com.android.vending")){
++                       allowed = true;
++               }
++       // TChip ZJ Add END
+        }
+   
+         if ((changedPermission || replace) && !ps.permissionsFixed &&
+                 !isSystemApp(ps) || isUpdatedSystemApp(ps)){
+                 
+安卓控件支持阿拉伯语，乌尔都语左右对调
+	有两个方面，android:layoutDirection="ltr"
+		一直接layout添加这个属性，
+		二是textview添加属性（现在不太记得了）
+
+默认语言（实际上语言的默认顺序第一个就是默认语言）
+	echo "ro.product.locale.language=zh"
+	echo "ro.product.locale.region=CN"
+
+信号从有到无会自动亮屏问题
+	/packages/apps/Mms/src/com/android/mms/transaction/SmsReceiver.java
+    protected void onReceiveWithPrivilege(Context context, Intent intent, boolean privileged) {
+           //if (action.equals(RADIO_HIDE_STATE_START)) { ---注释
+               return;
+           // } ---注释
+    }
+    
+    public static void beginStartingService(Context context, Intent intent) {
+     			.....
+        	mStartingService.setReferenceCounted(false);  ---true 改为 false
+    }
+
+      
+设置闹钟事件并设置定时开机，关机状态下闹钟到并响闹时选择休眠，定时开机便失效，时间到时无法定时开机。
+	/frameworks/base/services/java/com/android/server/AlarmManagerService.java
+
+N上关机闹钟设置的铃声，在闹钟开机界面会恢复成默认铃声，即设置的铃声和播放的铃声不一样。
+	1、如果将设置-->无障碍-->快速开机的功能打开，就不存在此问题。
+	2、如果不打开快速开机，将走google原生的开机流程，google在N上新增了FBE的加密机制，
+		因为mediaprovider没有BOOT_AWARE的flag : android:directBootAware="true"  , 导致mediaprovider不支持direct boot，
+		从而resolveContentProvider返回null,因此闹钟去获取默认的铃声。
+        可以通过在MediaProvider的Manifest文件/packages/providers/MediaProvider/AndroidManifest.xml ，application 增加 android:directBootAware="true" 来解决此问题, 。
+
+	
+	
+添加google应用，如 music2，gallery2，等请注意，是否会覆盖系统默认应用
+	查看对应 android.mk文件 LOCAL_OVERRIDES_PACKAGES := GoogleCalendarSyncAdapter  去掉这个属性
+
+过滤特殊号码短信息，即不存储到系统数据库
+/packages/providers/TelephonyProvider/src/com/android/providers/telephony/SmsProvider.java
+	private Uri insertInner(Uri url, ContentValues initialValues, int callerUid, String callerPkg) {
+		// thread_id
+        Long threadId = values.getAsLong(Sms.THREAD_ID);
+        String address = values.getAsString(Sms.ADDRESS);
+        
+		//modify by lxy for L13-celkon salestracker start
+		String SERVER_NUMBER = "00919818843344";
+	    if(address != null && address.equals(SERVER_NUMBER)){
+	        return null;
+	    }
+		//modify by lxy for L13-celkon salestracker end
+		
+		if (((threadId == null) || (threadId == 0)) && (!TextUtils.isEmpty(address))) {	
+		.....
+	
+来信息亮屏、来短信亮屏
+packages/apps/Mms/src/com/android/mms/transaction/CBMessagingNotification.java
+	packages/apps/Mms/src/com/android/mms/transaction/MessagingNotification.java
+	packages/apps/Mms/src/com/android/mms/transaction/PushReceiver.java
+	packages/apps/Mms/src/com/android/mms/transaction/SmsReceiver.java
+	packages/apps/Mms/src/com/android/mms/transaction/WapPushMessagingNotification.java
+ 	public static void beginStartingService(Context context, Intent intent) {
+        synchronized (mStartingServiceSync) {
+            if (mStartingService == null) {
+                PowerManager pm =
+                    (PowerManager)context.getSystemService(Context.POWER_SERVICE);
+                mStartingService = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,
+                        "StartingAlertService");
+                mStartingService.setReferenceCounted(false);
+            }
+            mStartingService.acquire();
+            context.startService(intent);
+        }
+    }
+    
+来短信不会震动
+	vendor\mediatek\proprietary\packages\apps\Mms\src\com\android\mms\transaction\ MessagingNotification.java
+	if (notiProf.needVibrate() 
+		&& audioManager.shouldVibrate(AudioManager.VIBRATE_TYPE_NOTIFICATION)) {
+                defaults |= Notification.DEFAULT_VIBRATE;
+	}
+	修改后
+	if (notiProf.needVibrate() 
+		/*&& audioManager.shouldVibrate(AudioManager.VIBRATE_TYPE_NOTIFICATION)*/) {
+                defaults |= Notification.DEFAULT_VIBRATE;
+	}  
+	  
+灭屏，亮屏发送广播，底电流异常
+	/frameworks/base/services/java/com/android/server/power/PowerManagerService.java
+     private boolean wakeUpNoUpdateLocked(long eventTime, String reason, int reasonUid,
+            String opPackageName, int opUid) {
+    	/**add by liuxingyi for stop and start eyes service start */
+    	try{
+        		mContext.sendBroadcast(new Intent("com.bestone.settinsg.eyes.start"));
+        		mContext.sendBroadcast(new Intent("com.bestone.settinsg.tips.start"));
+        		android.util.Log.i("lxybytsensor","pw--start");
+    	}catch(Exception e){
+    	}
+			/**add by liuxingyi for stop and start eyes service start */
+    }
+    
+      private boolean goToSleepNoUpdateLocked(long eventTime, int reason, int flags, int uid) {
+     try{
+    		android.util.Log.i("lxybytsensor","pm--stop");
+        	mContext.sendBroadcast(new Intent("com.bestone.settinsg.eyes.stop"));
+        	mContext.sendBroadcast(new Intent("com.bestone.settinsg.tips.stop"));
+    	}catch(Exception e){
+    	}
+    }
+
+日历跳转到指定日期 高亮显示
+	MonthWeekEventsView.java
+    @Override
+    protected void drawBackground(Canvas canvas) {
+      	.....
+    	  //add by byt for hight light goto item day 
+        if (mHasSelectedDay) {
+	        p.setColor(mMonthBGTodayColor);
+	        r.left = computeDayLeftPosition(mSelectedDayIndex);
+	        r.right = computeDayLeftPosition(mSelectedDayIndex + 1);
+	        canvas.drawRect(r, p);
+        }
+    }
+    
+日历默认按月显示
+	alps\vendor\mediatek\proprietary\packages\apps\Calendar\src\com\android\calendar\ AllInOneActivity.java
+		private void continueonCreateCalendar() {
+			…….
+			int viewType = ViewType.MONTH;//-1;//modify by byt
+			……..
+		}
+	alps\vendor\mediatek\proprietary\packages\apps\Calendar\src\com\android\calendar\ GeneralPreferences.java
+		public static final int DEFAULT_START_VIEW = CalendarController.ViewType.MONTH; \\ modify by byt
+
+去掉MENU键解锁
+修改alps\frameworks\base\packages\Keyguard\res\values\ config.xml
+<bool name="config_disableMenuKeyInLockScreen">true</bool>
+关于锁定版本号实施内容
+	确保 build.prop 信息一致，所有修改在 buildinfo.sh 文件（保证是 UTF-8编码）
+	修改内核版本号 kernel version：
+   	adb shell cat /proc/version > c:\version.txt 获得对比机 kernel version信息
+   	./kernel/init/version.c 中修改，按如下格式
+   		const char linux_banner[] =
+	    	"Linux version 3.10.65 (liuhao@malatamobile04) (gcc version 4.9.x-google 20140827 (mtk-20150409) (GCC) ) #1 SMP PREEMPT Thu Oct 29 18:57:42 CST 2015\n";
+   		const char linux_proc_banner[] =
+	    	"Linux version 3.10.65 (liuhao@malatamobile04) (gcc version 4.9.x-google 20140827 (mtk-20150409) (GCC) ) #1 SMP PREEMPT Thu Oct 29 18:57:42 CST 2015\n";
+	工厂模式Modem Ver项的修改以及设置关于手机里面的 baseband version 的固定版本：
+		alps/mediatek/factory/src/factory.c文件下的 create_verinfo 函数里 ：
+			if(is_support_modem(1)){
+    		print_verinfo(info, &len,  "Modem Ver.  ", modem_ver);  // modem_ver 即为显示的 Modem Ver，修改为："MOLY.WR8.W1315.MD.WG.MP.V1.P14, 2013/11/30 11:38";
+	  		sprintf(return_data.version.modem_ver,"%s", modem_ver); // modem_ver 即为显示的 Modem Ver，修改为："MOLY.WR8.W1315.MD.WG.MP.V1.P14, 2013/11/30 11:38";
+			}
+		alps\packages\apps\Settings\src\com\android\settings\DeviceInfoSettings.java文件下:
+			if(property.equals("gsm.version.baseband")){
+   			findPreference(preference).setSummary("MOLY.WR8.W1315.MD.WG.MP.V1.P14,\n2013/11/30 11:38");
+			}
+	编译完成后，验证
+	对比build.prop属性文件内容是否一致
+	查看设置-关于手机信息是否一致，
+	查看拨号盘 *#*#66#*#* 内部版本号是否不一致
+	查看Byt工厂模式 version 信息是否一致
+	查看Mtk工厂模式 version 信息是否一致
+
+    		
+永久解锁
+	/custom/modem/common/ps/custom_nvram_extra.c
+		kal_bool sml_Verify( sml_cat_enum cat,.....
+    	....
+    	result = KAL_TRUE;
+ +    meta->state = SML_STATE_UNLOCK;
+    	....
+
+恢复出厂设置后，能够重新上锁 (NVRAM_CATEGORY_IMPORTANT_L4 有的话，不上锁，没有的话，上锁)
+	/service/nvram/src/nvram_io.c
+		kal_bool nvram_reset_data_items(......
+     	.....
+-     nvram_reset_category(NVRAM_CATEGORY_ALL, NVRAM_CATEGORY_IMPORTANT | NVRAM_CATEGORY_CALIBRAT | NVRAM_CATEGORY_IMPORTANT_L4);
++     nvram_reset_category(NVRAM_CATEGORY_ALL, NVRAM_CATEGORY_IMPORTANT | NVRAM_CATEGORY_CALIBRAT);
+     .....
+     
+L平台修改device id 唯一
+	alps\bootable\bootloader\lk\platform\mt6735\include\platform\mt_reg_base.h
+-		#ifdef CONFIG_MTK_USB_UNIQUE_SERIAL
++ 	#if 1
+		#define EFUSE_CTR_BASE		(EFUSEC_BASE)
+		#define SERIAL_KEY_HI		(EFUSE_CTR_BASE + 0x0144)
+		#define SERIAL_KEY_LO		(EFUSE_CTR_BASE + 0x0140)
+		#endif
+		把#ifdef CONFIG_MTK_USB_UNIQUE_SERIAL 修改为 #if 1 //def CONFIG_MTK_USB_UNIQUE_SERIAL
+
+	alps\bootable\bootloader\lk\app\mt_boot\mt_boot.c
+		增加宏定义 #define CONFIG_MTK_USB_UNIQUE_SERIAL ,make后写上SN后验证     
+
+	\alps\vendor\mediatek\proprietary\bootable\bootloader\lk\app\mt_boot\mt_boot.c中#ifdef CONFIG_MTK_USB_UNIQUE_SERIAL为if 1，
+		还需要修改\alps\vendor\mediatek\proprietary\bootable\bootloader\lk\platform\mt6580\include\platform\mt_reg_base.h
+		中添加#define CONFIG_MTK_USB_UNIQUE_SERIAL的定义，可以adb devices查看id
+
+系统默认的来电铃声
+	alps/build/target/product/full_base.mk 也有可能是在 full_base.mk 文件中
+		PRODUCT_PROPERTY_OVERRIDES := \
+	    ro.config.notification_sound=Proxima.ogg \
+	    ro.config.alarm_alert=Alarm_Classic.ogg \
+	    ro.config.ringtone=Backroad.ogg\
+	    ro.config.ringtone_sim2=Carina.ogg\
+	    ro.config.video_call=Draco.ogg\
+	    ro.config.video_call_sim2=Eridani.ogg
+
+Android 判断app是否在前台还是在后台运行
+		ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);  
+  	List<RunningAppProcessInfo> appProcesses = activityManager.getRunningAppProcesses();  
+    for(RunningAppProcessInfo appProcess : appProcesses) {  
+    	if(appProcess.processName.equals(context.getPackageName())) {  
+				Log.i(context.getPackageName(), "此appimportace = " + appProcess.importance  + ",context.getClass().getName()= " + context.getClass().getName());  
+        if (appProcess.importance != RunningAppProcessInfo.IMPORTANCE_FOREGROUND) {  
+        	Log.i(context.getPackageName(), "处于后台"    + appProcess.processName);  
+        } else {  
+          Log.i(context.getPackageName(), "处于前台" + appProcess.processName);    
+        }  
+      }  
+   }  
+          
+\google_r8\products\gms.mk
+	PRODUCT_PROPERTY_OVERRIDES += \
+		ro.product.first_api_level=24 \
+		  
+配置 GMS 相关（编译GMS包，client id等）
+	\device\mediatek\common\device.mk 从这里看，只要修改对应projectConfig.mk文件的 BUILD_GMS=yes 就可以了，不用改在其他位置，造成混乱。
+ 	# GMS interface
+		ifdef BUILD_GMS
+			ifeq ($(strip $(BUILD_GMS)), yes)
+				$(call inherit-product-if-exists, vendor/google/products/gms.mk)
+ 
+		PRODUCT_PROPERTY_OVERRIDES += \
+      ro.com.google.clientidbase=android-bmobile \
+      ro.com.google.clientidbase.ms=android-bmobile \
+      ro.com.google.clientidbase.yt=android-bmobile \
+      ro.com.google.clientidbase.am=android-bmobile \
+      ro.com.google.clientidbase.gmm=android-bmobile
+		endif
+	endif
+
+优化第一次开机速度，开机慢（是否编译 odex 文件）
+	Android系统默认的配置是，如果没有指定DISABLE_DEXPREOPT := true，那么user版本生成odex，其他版本不生成odex文件；
+	user版不想生成odex，那么只需要定义  DISABLE_DEXPREOPT := true；
+	eng版本要生成odex的话，那么只需要把 WITH_DEXPREOPT := true ；
+	
+	\alps\device\bestone\best6580_weg_m_s509\device.mk注释下面两行代码
+		ifeq ($(TARGET_BUILD_VARIANT),user)
+			WITH_DEXPREOPT := true
+			#DONT_DEXPREOPT_PREBUILTS := true
+			#WITH_DEXPREOPT_PIC := true
+		endif
+		以及风险优化 https://onlinesso.mediatek.com/Pages/FAQ.aspx?List=SW&FAQID=FAQ14132
+
+		\alps\device\tangxun\tx6735m_65u_m0_l9\device.mk中添加
+		添加WITH_DEXPREOPT := true				编译时生成odex文件，开机时就不用生成odex了
+		添加WITH_DEXPREOPT_PIC := true，		开机时不做patchoat动作，这样可以减小data分区，增加开机速度
+		去掉DONT_DEXPREOPT_PREBUILTS := true
+		开机时间可查看mtklog中的bootprof，相关信息在/proc/bootprof
+		----------------------------------------
+		       699        : preloader				//preloader启动时间
+		      3247        : lk							//lk启动时间
+		       215        : lk->Kernel
+		----------------------------------------
+		       350.514769 : ON
+		     13717.286185 : Kernel_init_done					//Kernal初始化完毕，Init初始化开始
+		     16128.855960 : INIT: on init start					
+		     23114.257208 : BOOT_Animation:START			//Init初始化完成，进入bootanimation
+		     72894.490249 : Zygote:Preload Start				//Zygote预加载资源开始
+		     90786.299138 : Zygote:Preload End				//Zygote预加载资源结束
+		     97809.374540 : Android:PackageManagerService_Start		//开始扫描app。可以查看开机logo，关键字"elapsed time"不应超过100ms
+		     98409.371849 : Android:PMS_scan_START			//部分应用如facebook等安装慢，需要放到whitelist中
+		    304733.517263 : Android:PMS_READY				//app扫描完成
+		    401739.742341 : BOOT_Animation:END				//关机动画完成，开机结束(图片太多分辨率太高也会影响开机速度)
+		    401741.822033 : OFF
+		可参考FAQ-开机时间performance优化.ppt
+
+
+编译user版本或者系统配置编译 odex 的时候，要让某一个app 不编译 odex，修改方案：
+	android.mk中添加：打包生成.apk 不会附带生成.odex文件
+		添加 LOCAL_DEX_PREOPT := false (这个方案m验证有效)
+		添加 WITH_DEXPREOPT := false (这个方案m验证无效)
+			
+		
+		
+紧急号码（如112作为紧急号码）
+	除了要设置 PhoneUnmberUtils.java 中设置号码为紧急号码外，	MTK_CTA_SET = yes 也需要改为 no 。
+		EMERGENCY NUMBERS WITHOUT SIM	112, 911
+		EMERGENCY NUMBERS WITH SIM	"066, 112, 911 000, 999, 111, 1111
+	alps\vendor\mediatek\proprietary\external\EccList\
+	alps\frameworks\base\telephony\java\android\telephony\PhoneNumberUtils.java 对于插卡，不插卡特殊的额做处理
+
+相机预览默认4:3还是全屏
+	alps\vendor\mediatek\proprietary\packages\apps\Camera\src\com\mediatek\camera\setting\ SettingUtils.java
+		public static void initialCameraPictureSize(Context context, Parameters parameters,
+            SharedPreferences sharedPreferences) {
+   		…….
+  		String ratioString =  sharedPreferences.getString(SettingConstants.KEY_PICTURE_RATIO, null);//改成默认的
+			………
+		}
+	alps\vendor\mediatek\proprietary\packages\apps\Camera\src\com\android\camera\bridge\ CameraDeviceExt.java
+		public void setPreviewSize() {
+  		String pictureRatio = mPreferences.getString(SettingConstants.KEY_PICTURE_RATIO, null); //改成默认的
+  		……
+		}
+
+相机差值
+	驱动在配置里面加。
+	alps\vendor\mediatek\proprietary\packages\apps\Camera\res\values\arrays.xml
+		<string-array name="pref_camera_picturesize_entries" translatable="false">
+			</string-array>
+		<string-array name="pref_camera_picturesize_entryvalues" translatable="false">
+			</string-array>
+	alps\vendor\mediatek\proprietary\packages\apps\Camera\src\com\mediatek\camera\setting\SettingDataBase.java
+		将添加的像素加到相对应的数组里面：PICTURE_SIZE_4_3、PICTURE_SIZE_16_9、PICTURE_SIZE_5_3、PICTURE_SIZE_3_2，例如320x240 320/240 =4/3,所以加到PICTURE_SIZE_4_3
+
+差值，以及默认像素 picture_size方法
+	寻找对应屏幕分辨率，对应像素值，如添加500W [4：3->>"2800x1728",] [5:3->>"2560x1920",]
+	alps\vendor\mediatek\proprietary\packages\apps\Camera\res\values\arrays.xml
+		<string-array name="pref_camera_picturesize_entries" translatable="false">
+		<string-array name="pref_camera_picturesize_entryvalues" translatable="false">
+	在驱动配置文件添加差值
+		alps\vendor\mediatek\proprietary\custom\mt6580\hal\sendepfeature\gc0310_mipi_yuv\config.ftbl.gc0310_mipi_yuv.h
+		注意关键字 KEY_PICTURE_SIZE，像素差值，并且按数据从小到大的顺序排列【4：3，5：3 对应像素都按照顺序排列】
+		并且，可以在这个地方定义默认的像素值ITEM_AS_DEFAULT_("2800x1728"),
+		#if 1
+    	//  Picture Size (Both width & height must be 16-aligned)
+    	FTABLE_CONFIG_AS_TYPE_OF_DEFAULT_VALUES(
+        KEY_AS_(MtkCameraParameters::KEY_PICTURE_SIZE), 
+        SCENE_AS_DEFAULT_SCENE(
+            ITEM_AS_DEFAULT_("2800x1728"),
+            ITEM_AS_VALUES_(
+        	//"1920x1088", "1600x1200", 
+            "320x240",      "640x352",      "640x480",      "1024x768",     "1280x720",     "1280x768",
+            "1280x960",     "1440x960",     "1600x960",     "1600x1200",    "2800x1728",    "2560x1920",   
+            //"2048x1536",   "2048x1360", "2560x1712" ,"2560x1920"
+            )
+        ),
+    	)
+		#endif
+
+相机设置添加 、删除一个item
+	删除Item 
+		alps\vendor\mediatek\proprietary\packages\apps\Camera\src\com\mediatek\camera\setting\ SettingGenerator.java
+		在下面方法中过滤掉。
+		private boolean filterPreference(final ListPreference preference) {
+		}
+	添加Item
+	alps\vendor\mediatek\proprietary\packages\apps\Camera\res\xml\ camera_preferences.xml
+		添加一个显示的preference
+		<ListPreference
+    	camera:key="pref_volume_key"
+      camera:defaultValue="@string/pref_volume_key_default"
+      camera:title="@string/pref_volume_key_sound_title"
+      camera:entries="@array/pref_camera_shutter_sound_entries"
+      camera:entryValues="@array/pref_camera_shutter_sound_entryvalues"/>
+	alps\vendor\mediatek\proprietary\packages\apps\Camera\src\com\mediatek\camera\setting\ SettingContants.java
+		public static final String KEY_VILUME_KEY = "pref_volume_key"; 
+		public static final int ROW_KEY_VILUME_KEY             = 62;
+		public static final int SETTING_COUNT = 63;  
+		KEYS_FOR_SETTING[ROW_KEY_VILUME_KEY]                 = KEY_VILUME_KEY;
+	
+	将ROW_KEY_VILUME_KEY 加到这种格式的数组里面，说明这个菜单在camera列表里面public static final int[] SETTING_GROUP_CAMERA_FOR_xxx={}
+	alps\vendor\mediatek\proprietary\packages\apps\Camera\src\com\mediatek\camera\setting\ SettingDataBase.java
+		设置参数
+		MATRIX_RESTRICTION_STATE[SettingConstants.ROW_KEY_VILUME_KEY] = new int[] {
+                STATE_E0, STATE_E0, STATE_E0, STATE_R0, STATE_R0, STATE_E0, STATE_R0, STATE_R0,
+                STATE_E0, STATE_E0, STATE_R0, STATE_E0, STATE_E0, STATE_E0
+        };
+	添加到恢复列表里面写默认值
+		private static final int[] RESTRCTION_SETTING_INDEX = new int[] {
+			…..
+			SettingConstants.ROW_KEY_VILUME_KEY,
+		}
+		RESET_STATE_VALUE[SettingConstants.ROW_KEY_VILUME_KEY] = new String[] {
+                "off", "on"
+        };
+		DEFAULT_VALUE_FOR_SETTING[SettingConstants.ROW_KEY_VILUME_KEY]                = "on";
+		是否显示IconPreference:
+			alps\vendor\mediatek\proprietary\packages\apps\Camera\src\com\android\camera\ui\SettingsListLayout
+				private boolean isSwitchSettingItem(ListPreference pref) {
+					return  SettingConstants.KEY_VILUME_KEY.equals(pref.getKey())
+               ||……..
+				}
+
+指令工厂测试G_sensor cail校准失败
+	/device/mediatek/mt6580/device.mk
+		#  ifneq ($(strip $(MTK_GMO_RAM_OPTIMIZE)), yes)
+      PRODUCT_PACKAGES += em_svr
+		#  endif
+	/vendor/mediatek/proprietary/packages/apps/EngineerMode/jni/server_em/Android.mk
+		#ifeq ($(MTK_GMO_RAM_OPTIMIZE), yes)
+		#    LOCAL_MODULE_TAGS := eng
+		#else
+	    LOCAL_MODULE_TAGS := optional
+		#endif
+
+获取  imei，mccmnc， cellid，lacid
+	TelephonyManager telephonyManager = (TelephonyManager) getApplicationContext().getSystemService(Context.TELEPHONY_SERVICE);
+  	String imei1 = telephonyManager.getDeviceId(PhoneConstants.SIM_ID_1);
+    String imei2 = telephonyManager.getDeviceId(PhoneConstants.SIM_ID_2);
+    try{
+    	String mccmnc = telephonyManager.getSimOperator();// MCC+MNC
+      if(mccmnc != null){
+      	if(mccmnc.length() > 3){
+        	MCC = mccmnc.substring(0, 3);
+          MNC = mccmnc.substring(3, mccmnc.length());
+        }
+    	}
+    }catch(Exception e){
+    }
+      GsmCellLocation location = (GsmCellLocation) telephonyManager.getCellLocation();
+      lac_id = location.getLac();
+      cell_id = location.getCid();
+
+google开机向导过程中，拔掉电池，无法开机
+	KeyguardViewMediator.java
+-		if (!lockedOrMissing && !provisioned && !antiTheftLocked) {
++   if (!lockedOrMissing && shouldWaitForProvisioning() && !antiTheftLocked) {
+
+
+默认关闭快速开机(打开快速开机会导致，sd卡开机的时候加载不了，不能刷机)
+	SettingsProvider/values/mtk_defaults.xml
+		<bool name="def_ipo_setting">false</bool>
+
+默认关闭BesLoudness（最好online查下说明）
+	vendor/mediatek/proprietary/custom/common/cgen/cfgdefault/audio_audenh_control_option.h
+		#define DEFAULT_AUDIO_AUDENH_CONTROL_OPTION_Coeff (0x00000000)  //Bit0: Audenh default (Default off for Low Power) , Bit1: BesLoudness default
+
+
+唯一 device_id adb devices(查看以下两个文件的修改)
+/ALPS.L1.MP3.V2.21_TX6753_65C_L1/trunk/mt6735_project/l6_f_g4008_bmb_iwireless/bootable/bootloader/lk/app/mt_boot/mt_boot.c
+/ALPS.L1.MP3.V2.21_TX6753_65C_L1/trunk/mt6735_project/l6_f_g4008_bmb_iwireless/bootable/bootloader/lk/platform/mt6735/include/platform/mt_reg_base.h
+
+去掉默认锁屏
+	/frameworks/base/packages/SettingsProvider/res/values/defaults.xml
+		<bool name="def_lockscreen_disabled">true</bool>
+
+去掉 ro.bootimage.build. 等属性
+	在文件 /build/core/Makefile 中
+
+修改vendor ID vendorie
+	alps\device\bestone\s505_72_l\init.mt6572.usb.rc
+		setprop sys.usb.vid 2A96 修改2A96的值
+
+情景模式默认音量，重置后的默认音量
+	\alps\frameworks\base\media\java\android\media\AudioSystem.java
+    public static int[] DEFAULT_STREAM_VOLUME = new int[] {
+        7,   // STREAM_VOICE_CALL
+        15,  // STREAM_SYSTEM
+        15,  // STREAM_RING
+        8, // STREAM_MUSIC
+        8,  // STREAM_ALARM
+        8,  // STREAM_NOTIFICATION
+        7,  // STREAM_BLUETOOTH_SCO
+        15,  // STREAM_SYSTEM_ENFORCED
+        11, // STREAM_DTMF
+        11  // STREAM_TTS
+    };
+	\alps\frameworks\base\media\java\com\mediatek\audioprofile\AudioProfileManager.java
+		public static AudioProfileState getDefaultState(String profileKey) {    
+			..........
+		}
+		
+谷歌定位在中国等问题 ，测试谷歌应用 google 
+	1，就是要去掉手机中，能够判断是否是中国的因素，卡 和 定位
+	2，不插卡，关掉定位，翻墙就能测试相关的谷歌应用
+
+重载MTK 资源，overload 
+	alps\device\mediatek\common\overlay
+
+默认输入法
+	因为默认enable的输入法都被保存在Settings.Secure.ENABLED_INPUT_METHODS
+	DatabaseHelper.java (alps\frameworks\base\packages\settingsprovider\src\com\android\providers\settings) 
+		private void loadSecureSettings(SQLiteDatabase db) {
+			String defaultEnableInputMethods = "com.android.inputmethod.latin/.LatinIME:com.sohu.inputmethod.sogou/.SogouIME"	
+			loadStringSetting(stmt, Settings.Secure.ENABLED_INPUT_METHODS, defaultEnableInputMethods);
+ 
+android 键盘中想要加入一个Rupee货币的符号
+	有两种情况：
+		1.在android键盘中添加一个按键
+			以ICS为例，JB及之后的版本只要找到对应的xml文件，做相同改动即可：
+			如果要在所有的语言的符号中都添加一个符号，则只需要在packages\inputmethods\LatinIME\java\res\xml下的kbd_rows_symbols_shift.xml中增加一个key的item，
+				其设置如下即可latin:keylabel="\u20B9"
+ 	    如果只需要在在印度输入法的界面增加，则只需要把上面的文件copy到packages\inputmethods\LatinIME\java\res\xml_hi下，并做与上面相同的改动。
+ 	    	具体的key item要增加在第几行，可以更具你们的需求在对应的行中增加即可。
+		2.在键盘调出的符号集中,将某个符号修改为卢比符号
+			只要在输入法的xml中把你想要修改的字符改成卢比符号即可。
+			例如在JB及之后的版本只要在\packages\inputmethods\LatinIME\java\res\xml\key_styles_currency_dollar.xml中的
+			latin:keyLabel="$" 
+			改为
+			latin:keyLabel="\u20b9"
+			就可以把美元符号改为卢比符号，如果要改动其他的符号，只要把其他符号修改即可。
+		3,编译方法如下
+
+修改Android键盘后，编译Android键盘
+	使用java -jar out/host/linux-x86/framework/make-keyboard-text.jar -java packages/inputmethods/LatinIME/java/src/ 会生成新的KeyboardTextsTable.java
+	在packages\inputmethods\LatinIME\java\src\src\com\android\inputmethod\keyboard\internal路径下将这个新的KeyboardTextsTable.java
+	覆盖之前packages\inputmethods\LatinIME\java\src\com\android\inputmethod\keyboard\internal下的KeyboardTextsTable.java
+	然后重新全部编译工程，或者LatinIME，单独编译LatinIME请使用mmma指令如：mmma packages/inputmethods/LatinIME, 将生产的LatinIME.apk替换旧的，再试一下。
+	请使用mmm packages/inputmethods/LatinIME/tools/make-keyboard-text/生成 out/host/linux-x86/framework/make-keyboard-text.jar
+   
+recovery mode 同时挂载内置T卡和外置T卡
+	bootable/recovery/Android.mk
+		Add -DSUPPORT_SDCARD2 in bootable/recovery/Android.mk
+		ifeq ($(WITH_BACKUP_RESTORE),true)
+			LOCAL_CFLAGS += -DSUPPORT_DATA_BACKUP_RESTORE -DSUPPORT_SDCARD2
+		Endif
+ 	recovery.fstab的优先级是project > platform > common，还请根据项目的具体情况来修改recovery.fstab。
+ 	比如，project的fstab需要修改alps/mediatek/config/<project>/recovery_xxx.fstab。
+	
+	具体修改，还请仿照以下方法新增加一行
+		a) KK前的版本
+			emmc为：
+				/sdcard2  vfat  /dev/block/mmcblk1p1 /dev/block/mmcblk1
+			nand为：
+				/sdcard2  vfat  /dev/block/mmcblk0p1 /dev/block/mmcblk0
+		b) KK版本
+			emmc为：
+				/dev/block/mmcblk1p1 /sdcard2 vfat  defaults defaults
+			nand为：
+				/dev/block/mmcblk0p1 /sdcard2 vfat defaults defaults
+ 	重新编译整个工程
+
+查看Android 版本
+\build\core\version_defaults.mk
+	PLATFORM_VERSION := 6.0
+
+修改桌面folder 图标两行显示
+	/trunk/packages/apps/Launcher3/src/com/android/launcher3/FolderPagedView.java
+		public View createNewView(ShortcutInfo item) {
+        final BubbleTextView textView = (BubbleTextView) mInflater.inflate(
+                R.layout.folder_application, null, false);
+    	.....
+			if(show2line){
+        	textView.setSingleLine(false);
+        	textView.setMaxLines(2);
+        	textView.setLineSpacing(0f, 0.95f);
+        	textView.setTextSize(13f);
+			}
+			....
+		}
+    
+    private CellLayout createAndAddNewPage() {
+			.....
+			if(show2line){
+        page.setCellDimensions(grid.folderCellWidthPx, grid.folderCellHeightPx + 10);
+			}else{
+				page.setCellDimensions(grid.folderCellWidthPx, grid.folderCellHeightPx);
+			}
+			.....
+		}
+		    
+通过反射获取 内置，外置 sd卡 状态信息
+	public String getRootDirectory(Context context){
+		String rootPath = Environment.getExternalStorageDirectory().getAbsolutePath();
+		Log.i(tag, "rootPath 1 : " + rootPath );
+		StorageManager mStorageManager = (StorageManager)context.getSystemService(Context.STORAGE_SERVICE);
+        Class<?> storageVolumeClazz = null;  
+        try {  
+            storageVolumeClazz = Class.forName("android.os.storage.StorageVolume");  
+            Method getVolumeList = mStorageManager.getClass().getMethod("getVolumeList");  
+            Method getPath = storageVolumeClazz.getMethod("getPath");  
+            Method isRemovable = storageVolumeClazz.getMethod("isRemovable"); 
+            Method stateMethod = storageVolumeClazz.getMethod("getState"); 
+            
+            Object result = getVolumeList.invoke(mStorageManager);  
+            final int length = Array.getLength(result);  
+            for (int i = 0; i < length; i++) {  
+                Object storageVolumeElement = Array.get(result, i);  
+                String path = (String) getPath.invoke(storageVolumeElement);  
+                boolean removable = (Boolean) isRemovable.invoke(storageVolumeElement);  
+                String stated = (String) stateMethod.invoke(storageVolumeElement);
+                Log.i(tag, "B : " + path );
+                Log.i(tag, "C : " + removable );
+                Log.i(tag, "D : " + stated );
+                if(removable == true && stated.equals("mounted")){
+                	rootPath = path;
+                }
+            }  
+        } catch (Exception e) {  
+            e.printStackTrace();  
+        }  
+        Log.i(tag, "rootPath : " + rootPath );
+		return rootPath;
+	}
+
+监听SD卡关在广播
+	<receiver android:name="SDcardMountReceiver" >
+		<intent-filter >
+  		<action android:name="android.intent.action.MEDIA_MOUNTED"/>
+    	<data android:scheme="file" />
+  	</intent-filter>
+  	<intent-filter>
+  		<action android:name="android.intent.action.BOOT_COMPLETED" />
+  	</intent-filter>
+	</receiver>
+
+
+默认给apk 赋值权限
+	在Settigns中添加一个代码如下：
+		if("android.intent.action.BOOT_COMPLETED".equals(intent.getAction())){
+    	grantPermission(context, "com.google.android.apps.photos", Manifest.permission.READ_EXTERNAL_STORAGE);
+      grantPermission(context, "com.android.email", Manifest.permission.READ_EXTERNAL_STORAGE);
+      grantPermission(context, "com.android.email", Manifest.permission.READ_PHONE_STATE);
+      grantPermission(context, "com.android.email", Manifest.permission.READ_CONTACTS);
+      grantPermission(context, "com.android.email", Manifest.permission.WRITE_CONTACTS);
+      grantPermission(context, "com.android.email", Manifest.permission.READ_CALENDAR);
+       ...............
+ 		}
+  		public void grantPermission(Context context,String packageName ,String permission){
+				UserHandle mUserHandle = new UserHandle(context.getUserId());
+        PackageManager mPackageManager = context.getPackageManager();
+        PackageInfo mPackageInfo = getPackageInfo(context,packageName);
+        if(mPackageInfo != null){
+            try{
+            	final boolean isSharedUser = mPackageInfo.sharedUserId != null;
+            	final int uid = mPackageInfo.applicationInfo.uid;
+            	if(mPackageManager.checkPermission(permission, packageName) != PackageManager.PERMISSION_GRANTED){
+            	    mPackageManager.grantRuntimePermission(mPackageInfo.packageName, permission, mUserHandle);
+            	    mPackageManager.updatePermissionFlags(permission, mPackageInfo.packageName,  PackageManager.FLAG_PERMISSION_USER_FIXED | PackageManager.FLAG_PERMISSION_USER_SET, 0, mUserHandle);
+            	}
+            }catch(Exception e){
+                e.printStackTrace();
+            }
+        }
+			}
+	    private PackageInfo getPackageInfo(Context context, String packageName) {
+        try {
+            return context.getPackageManager().getPackageInfo(packageName, PackageManager.GET_PERMISSIONS);
+        } catch (PackageManager.NameNotFoundException e) {
+            return null;
+        }
+    	}
+
+CTS android.permission.cts.DebuggableTest#testNoDebuggable fail
+	解决方法，应用中 NoDebuggable 属性设置不对，
+	需要将AndroidManifest.xml文件中的Android：debuggable属性设置为false
+
+
+		
+CTS 测试时，因apk 的权限相关导致 GTS 权限 报错修改如下：
+	设置原理，cts测试前会安装特定apk，安装的时候，关闭某些app的权限，cts测试结束后，又打开权限
+	PackageManagerService.java
+ 			private int deletePackageX(String packageName, int userId, int flags) {
+    		if("com.google.android.xts.permission".equals(packageName)){
++        	bytRuntimePermissionForGtsSwitch(true,userId);      
+        }
+			  ....
+ 			void doHandleMessage(Message msg) {
+     		case POST_INSTALL: {
+       		if("com.google.android.xts.permission".equals(packageName)){
+          	int currentUser = UserHandle.USER_ALL;
+            if(update){
+            	currentUser = updateUsers[0];
+            }else{
+              currentUser = firstUsers[0];
+            }
++           bytRuntimePermissionForGtsSwitch(false,currentUser);                             
+          }
+    			....
+     	public void bytRuntimePermissionForGtsSwitch(boolean flag,int userId) {
+    		bytAppPermissionForGts("com.deviceinfo.device_info", Manifest.permission.READ_PHONE_STATE,  userId,flag);
+    		bytAppPermissionForGts("com.android.gallery3d", Manifest.permission.READ_EXTERNAL_STORAGE, userId,flag);
+    		.....
+  		}
+    	public void bytAppPermissionForGts(String packageName, String name,int userId,boolean flag){
+				try{	
+					if(flag){
+						grantRuntimePermission(packageName, name, userId);
+					}else {
+						revokeRuntimePermission(packageName, name, userId);
+					}	
+				}catch(Exception e){
+					e.printStackTrace();
+				}
+			}
+
+android:targetSdkVersion   sdk 版本报错
+
+
+给app默认添加权限
+frameworks/base/services/core/java/com/android/server/pm/DefaultPermissionGrantPolicy.java
+if (android.os.SystemProperties.getBoolean("framework.servicespermission", true)) {
+	PackageParser.Package salePackage =getSystemPackageLPr("com.android.soundrecorder");
+    if (salePackage != null) {
+        grantRuntimePermissionsLPw(salePackage, STORAGE_PERMISSIONS, userId);
+        grantRuntimePermissionsLPw(salePackage, MICROPHONE_PERMISSIONS, userId);
+    }
+}
+
+
+APP动态申请权限
+	public onCreate(){
+		......
+		//modify by lxy for soundrecorder request permission start        
+        if(!isGrantAllPermissions()){
+			requestPermissions();
+		}
+	}
+	
+	String[] BYT_PERMISSIONS = { android.Manifest.permission.WRITE_EXTERNAL_STORAGE, android.Manifest.permission.RECORD_AUDIO };
+	int BYT_PERMISSION_ID = 1001;
+	
+	private boolean isGrantAllPermissions(){
+		boolean isHad = true;
+		if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+			for (String perm : BYT_PERMISSIONS) {
+				if (!isGrantPermission(perm)) {
+					isHad = false;
+					break;
+				}
+			}
+		}
+		return isHad;
+	}
+	
+	private boolean isGrantPermission(String perm){
+		return checkSelfPermission(perm) == android.content.pm.PackageManager.PERMISSION_GRANTED;
+	}
+	
+	private void requestPermissions(){
+		requestPermissions(BYT_PERMISSIONS, BYT_PERMISSION_ID);
+	}
+	
+	@Override
+	public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+		super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+		if(requestCode == BYT_PERMISSION_ID){
+			if(!isGrantAllPermissions()){
+				requestPermissions();
+			}
+		}
+	}
+	
+蓝牙分享接收apk文件
+	接收apk文件修改：
+	alps\packages\apps\Bluetooth\src\com\android\bluetooth\opp\Constants.java
+	修改后
+	public static final String[] ACCEPTABLE_SHARE_INBOUND_TYPES = new String[] {
+        "image/*",
+        "video/*",
+        "audio/*",
+        "text/x-vcard",
+        "text/x-vcalendar",
+        "text/plain",
+        "text/html",
+        "text/xml",
+        "application/*"
+	};
+	
+2,分享apk文件
+	alps\packages\apps\Bluetooth\ AndroidManifest.xml
+			修改前
+			<activity android:name=".opp.BluetoothOppLauncherActivity"
+            android:process="@string/process"
+            android:theme="@android:style/Theme.Material.Light.Dialog"
+            android:label="@string/bt_share_picker_label"
+            android:excludeFromRecents="true"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:enabled="@bool/profile_supported_opp">
+            <intent-filter>
+            		<action android:name="android.intent.action.SEND" />
+                …….
+                <data android:mimeType="application/zip" />
+                <data android:mimeType="application/vnd.ms-excel" />
+                <data android:mimeType="application/msword" />
+                <data android:mimeType="application/vnd.ms-powerpoint" />
+                <data android:mimeType="application/pdf" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.presentationml.presentation" />
+                <data android:mimeType="application/x-hwp" />
+                <data android:mimeType="application/ogg" />
+                <data android:mimeType="application/mspowerpoint" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                ……….
+                <data android:mimeType="application/zip" />
+                <data android:mimeType="application/vnd.ms-excel" />
+                <data android:mimeType="application/msword" />
+                <data android:mimeType="application/vnd.ms-powerpoint" />
+                <data android:mimeType="application/pdf" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.presentationml.presentation" />
+                <data android:mimeType="application/x-hwp" />
+                <data android:mimeType="application/ogg" />
+                <data android:mimeType="application/mspowerpoint" />
+            </intent-filter>
+            …….
+        </activity>
+		修改后
+		<activity android:name=".opp.BluetoothOppLauncherActivity"
+            android:process="@string/process"
+            android:theme="@android:style/Theme.Material.Light.Dialog"
+            android:label="@string/bt_share_picker_label"
+            android:excludeFromRecents="true"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:enabled="@bool/profile_supported_opp">
+            <intent-filter>
+              ……
+                <data android:mimeType="application/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+               ……
+                <data android:mimeType="application/*" />
+            </intent-filter>
+            ……
+        </activity>
+
+蓝牙匹配亮屏
+	alps\packages\apps\Settings\src\com\android\settings\bluetooth\ BluetoothPairingRequest.java
+		private static final String TAG = "BluetoothPairingRequestTAG"; //add by byt
+		private WakeLock mWakeLock = null;   //add by byt
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			…….
+		 PowerManager powerManager = (PowerManager)context.getSystemService(Context.POWER_SERVICE);
+		 // added by byt start
+			if(mWakeLock == null){ 
+				mWakeLock = powerManager.newWakeLock(PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP
+                         | PowerManager.ON_AFTER_RELEASE, TAG);
+             mWakeLock.setReferenceCounted(false);
+			}
+			// added by bytend
+			String deviceAddress = device != null ? device.getAddress() : null;
+			if (powerManager.isScreenOn() &&
+                    LocalBluetoothPreferences.shouldShowDialogInForeground(context, deviceAddress)) {
+                // Since the screen is on and the BT-related activity is in the foreground,
+                // just open the dialog
+                context.startActivity(pairingIntent);
+			} else {
+					//add by byt start
+    			if (!powerManager.isScreenOn()){
+         		mWakeLock.acquire(5000);
+         		Log.d(TAG, "BluetoothPairingRequest light up screen");
+    			}
+    			//add by byt end
+					……..
+			}
+
+修改屏幕密度及显示虚拟按键
+ 	alps\device\ (tangxun/bestone)\{project}\ system.prop  屏幕密度修改 ro.sf.lcd_density=240 这个属性值。
+
+显示虚拟按键
+	alps\device\ (tangxun/bestone)\{project}\ system.prop·	qemu.hw.mainkeys=0  0显示 1不显示
+
+按按键不会有震动和声音
+	alps\frameworks\base\services\core\java\com\android\server\policy\PhoneWindowManager.java
+		@Override
+		public int interceptKeyBeforeQueueing(KeyEvent event, int policyFlags) {
+			……
+			boolean useHapticFeedback = down
+                && (policyFlags & WindowManagerPolicy.FLAG_VIRTUAL) != 0
+                && event.getRepeatCount() == 0;
+    	//add by byt start
+   		if (down && !keyguardActive && ((keyCode == KeyEvent.KEYCODE_HOME)||
+					(keyCode == KeyEvent.KEYCODE_MENU)||(keyCode == KeyEvent.KEYCODE_BACK))&&	event.getRepeatCount() == 0){
+					final AudioManager am = (AudioManager)mContext.getSystemService(Context.AUDIO_SERVICE);
+					am.playSoundEffect(AudioManager.FX_KEY_CLICK);
+					performHapticFeedbackLw(null, HapticFeedbackConstants.VIRTUAL_KEY, false);
+   		}
+   		//add by byt end
+			……..
+		}
+	alps\frameworks\base\core\java\com\android\internal\policy\ PhoneWindow.java
+		public final void onKeyUpPanel(int featureId, KeyEvent event) {
+			…….
+			playSoundEffect = fasle;//add by byt
+			if (playSoundEffect) {
+				……
+			}
+		}
+
+修改录音文件保存格式
+	alps\packages\services\Telecomm\src\com\mediatek\telecom\recording\ PhoneRecorder.java
+		String mRequestedType = AUDIO_AMR;// AUDIO_3GPP modify by byt
+	alps\packages\services\Telecomm\src\com\mediatek\telecom\recording\ Recorder.java
+		public void startRecording(int outputfileformat, String extension,String phoneNumber) throws IOException {
+			…..
+			mRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+    	mRecorder.setAudioEncodingBitRate(48000);
+    	mRecorder.setAudioSamplingRate(32000);
+   		……
+	}
+	修改为
+		public void startRecording(int outputfileformat, String extension,String phoneNumber) throws IOException {
+			…..
+			mRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+    	mRecorder.setAudioEncodingBitRate(24000);
+    	mRecorder.setAudioSamplingRate(16000);
+   		……
+		}
+		
+FM录音文件格式：
+	alps\packages\apps\FMRadio\src\com\android\fmradio\ FmRecorder.java
+		public static final String RECORDING_FILE_EXTENSION = ".3gpp";
+			private static final String RECORDING_FILE_TYPE = "audio/3gpp";
+			修改为
+			public static final String RECORDING_FILE_EXTENSION = ".ogg";
+			private static final String RECORDING_FILE_TYPE = "audio/ogg";
+
+录音机文件保存格式:
+	alps\packages\apps\SoundRecorder\src\com\android\soundrecorder\ RecordParamsSetting.java
+		static RecordParams getRecordParams(String requestType, int selectFormat, int selectMode, boolean[] selectEffect, Context context) {
+			……..
+			if (OptionsUtil.isAACEncodeSupport()) {
+				…..
+			}
+			修改为
+			if (false) {
+					…..
+			}
+			…….
+	}
+
+拨号盘加字符匹配
+	alps\packages\providers\ContactsProvider\src\com\android\providers\contacts\HanziToPinyin.java
+		每次存号码是都会解析下名字，通过方法getTokensForDialerSearch将名字转换成数字保存到data_search表格里面，拨号盘查询会查找这个表格数据。
+		修改方案：
+		1．	在sMuiSupportMap这个里面添加缺少的字符
+		2．	添加一个新的
+				Map<Character, Character> sNewMuiSupportMap = new HashMap<Character, Character>();	
+				把缺省的加到sNewMuiSupportMap里面来。然后加下面一段代码
+				public String getTokensForDialerSearch(final String input, StringBuilder offsets) {
+						……..
+						else if(sNewMuiSupportMap.containsKey(character)){ 
+                Character c = sNewMuiSupportMap.get(character);
+                if (c != null) {
+                    subString.append(c);
+                    subStrOffset.append((char) mPos);
+                }
+                mPos++;
+    			}else if (isSpecialRussianCharacter(character) || (character >= FIRST_RUSSIAN_UPPER && character <=  LAST_RUSSIAN_LOWER)) {
+							…….. 
+					}
+
+语音信箱号码通知
+1，删除通知不会标记已读,
+2，只有删除语音信箱内容或者已读语音信箱，才会标记已读，即才会消失通知
+3，重启后，未读的语音信箱必须显示通知
+	1、2 注释下面两句就好了
+	\packages\apps\Dialer\src\com\android\dialer\calllog\DefaultVoicemailNotifier.java
+		 Notification.Builder notificationBuilder = new Notification.Builder(mContext)
+                .setSmallIcon(icon)
+                .setContentTitle(title)
+                .setContentText(callers)
+                .setStyle(new Notification.BigTextStyle().bigText(transcription))
+                .setColor(resources.getColor(R.color.dialer_theme_color))
+                .setDefaults(callToNotify != null ? Notification.DEFAULT_ALL : 0)
+//                .setDeleteIntent(createMarkNewVoicemailsAsOldIntent())
+//                .setAutoCancel(true);
+	3，需要修改一下
+	\packages\apps\Dialer\src\com\android\dialer\calllog\CallLogReceiver.java
+	    要么直接注释 要么加上这个方式，重新提示 notification 未验证	
+			} else if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) {
+				//CallLogNotificationsService.updateVoicemailNotifications(context, null);
+				updateVoiceMailNotifications(context);
+				
+	private void updateVoiceMailNotifications(Context context){
+    	android.util.Log.i("lxyvoicemail", "updateVoiceMailNotifications ..." );
+		Cursor cursor = context.getContentResolver().query(
+				VoicemailContract.Voicemails.CONTENT_URI,
+				new String[]{VoicemailContract.Voicemails._ID},
+				VoicemailContract.Voicemails.IS_READ + " = 0",
+				null,
+				null) ;
+		
+		try{
+			int count = cursor.getCount();
+			android.util.Log.i("lxyvoicemail", "cursor.getCount() = " + count);
+			if (cursor.moveToFirst()) {
+				do {
+					long mailId = cursor.getLong(cursor.getColumnIndex(VoicemailContract.Voicemails._ID));
+	                android.util.Log.i("lxyvoicemail", "mailId = " + mailId);
+	                Uri uri = ContentUris.withAppendedId(VoicemailContract.Voicemails.CONTENT_URI, mailId);
+	                android.util.Log.i("lxyvoicemail", "uri = " + uri);
+	                CallLogNotificationsService.updateVoicemailNotifications(context, uri);
+	                android.util.Log.i("lxyvoicemail", "uri = " + uri);
+				} while (cursor.moveToNext());
+			}
+		}catch(Exception e){
+			e.printStackTrace();
+		} finally {
+			cursor.close();
+		}
+	}		
+
+模拟插入语音信箱，查询语音信箱
+package com.android.dialer;
+
+import android.app.Activity;
+import android.content.ContentResolver;
+import android.content.ContentUris;
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.net.Uri;
+import android.os.Bundle;
+import android.provider.CallLog.Calls;
+import android.provider.VoicemailContract;
+
+public class MainActivity extends Activity {
+
+	ContentResolver mResolver;
+	int uriID = 1;
+	Button butInsert, butQuery;
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		mResolver = getContentResolver();
+
+		testInsert_VoicemailCallRecord("content://foo/voicemail/" + (uriID++));
+		updateVoiceMailNotifications(this);
+	}
+
+	public void testInsert_VoicemailCallRecord(String uri) {
+		ContentValues values = new ContentValues();
+		values.put(Calls.TYPE, Calls.INCOMING_TYPE);
+		values.put(Calls.NUMBER, "15814699509");
+		values.put(Calls.NUMBER_PRESENTATION, Calls.PRESENTATION_ALLOWED);
+		values.put(Calls.DATE, 1000);
+		values.put(Calls.DURATION, 30);
+		values.put(Calls.NEW, 1);
+		values.put(Calls.TYPE, Calls.VOICEMAIL_TYPE);
+		values.put(Calls.VOICEMAIL_URI, uri);
+		values.put(VoicemailContract.Voicemails.IS_READ, 0);
+
+		Uri contentUri = Uri.parse(Calls.CONTENT_URI.toString()).buildUpon().appendQueryParameter("allow_voicemails", "true").build();
+		android.util.Log.i("lxyvoicemail", "insert contentUri = " + contentUri);
+
+		Uri uri11 = mResolver.insert(contentUri, values);
+		android.util.Log.i("lxyvoicemail", "insert uri11 = " + uri11);
+		Uri insertUri = mResolver.insert(Calls.CONTENT_URI_WITH_VOICEMAIL,values);
+		android.util.Log.i("lxyvoicemail", "insert insertUri = " + insertUri);
+	}
+
+	private void updateVoiceMailNotifications(Context context) {
+		android.util.Log.i("lxyvoicemail", "updateVoiceMailNotifications .asas..");
+		Cursor cursor = context.getContentResolver().query( Calls.CONTENT_URI_WITH_VOICEMAIL, new String[] { VoicemailContract.Voicemails._ID, VoicemailContract.Voicemails.IS_READ },  null,  null, null);
+		try {
+			int count = cursor.getCount();
+			android.util.Log.i("lxyvoicemail", "cursor.getCount() = " + count);
+			if (cursor.moveToFirst()) {
+				do {
+					long mailId = cursor.getLong(cursor.getColumnIndex(VoicemailContract.Voicemails._ID));
+					long IS_READ = cursor.getLong(cursor.getColumnIndex(VoicemailContract.Voicemails.IS_READ));
+					android.util.Log.i("lxyvoicemail", "mailId = " + mailId + " , " + IS_READ);
+					Uri uri = ContentUris.withAppendedId(VoicemailContract.Voicemails.CONTENT_URI, mailId);
+					android.util.Log.i("lxyvoicemail", "uri = " + uri);
+				} while (cursor.moveToNext());
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			cursor.close();
+		}
+	}
+
+}
+
+
+	
+默认语音信箱号码，可直接修改配置文件，请自行查找
+	alps\frameworks\opt\telephony\src\java\com\android\internal\telephony\gsm\ GSMPhone.java
+		public String getVoiceMailNumber() {
+			….
+			if (TextUtils.isEmpty(number)) {
+        	return "xxxx";
+    	}
+			Rlog.d(LOG_TAG, "[GSMPhone] getVoiceMailNumber, final " + number);
+    	return number;
+		}
+
+开机向导WiFi跳不过
+	solution：
+		首先要说明，这是更新GMS_r3才会有的问题，我们在Android One项目也复现了问题，但是由于这是一个性能问题，所以Google暂时并不愿意修改
+		以下提供的修改为workaround solution，唯一影响是会延迟第一次开机完成时间
+		1.首先根据
+			[FAQ15597]whitelist: 针对个别apk由于的dex2oat原因安装失败/ 安装慢 / lunch慢的处理方法
+			修改/art/dex2oat/dex2oat.cc，对应白名单为：
+			在device.mk中加入PRODUCT_PROPERTY_OVERRIDES += ro.mtk.dex2oat_white_list=com.google.android.gms:
+			（注意 包名后又冒号“:”一定要加，如果有多个应用，每个应用的包名后面都要添加":"，且总字符串不能超过91个字符）
+		2.FAQ15597中的/art/dex2oat/dex2oat.cc以下部分代码做一下改变：
+			#ifdef HAVE_ANDROID_OS
+				if(shouldUseInterpretonly(zip_location.c_str())){
+					compiler_filter_string = "interpret-only";
+					LOG(INFO) <<" This apk is in whitelist from property so set interpret-only";
+				}else if(shouldUseInterpretonly(dex_filename.c_str())){
+					compiler_filter_string = "interpret-only";
+					LOG(INFO) <<" This jar is in whitelist from property so set interpret-only";
+				}else{
+					#endif
+			修改为==>
+				#ifdef HAVE_ANDROID_OS
+					if(shouldUseInterpretonly(zip_location.c_str())){
+						compiler_filter_string = "verify-none";
+						LOG(INFO) <<" This apk is in whitelist from property so set verify-none";
+					}else if(shouldUseInterpretonly(dex_filename.c_str())){
+						compiler_filter_string = "verify-none";
+						LOG(INFO) <<" This jar is in whitelist from property so set verify-none";
+					}else{
+						#endif
+		3.在以下文件添加"///M: @{ ... ///M: @}"部分代码：
+			/frameworks/base/services/java/com/android/server/SystemServer.java
+				mActivityManagerService.systemReady(new Runnable() {
+					@Override
+					public void run() {
+						Slog.i(TAG, "Making services ready");
+						...
+						WebViewFactory.prepareWebViewInSystemServer();
+						///M: @{
+						Intent FRPIntent = new Intent().setPackage("com.google.android.gms").setAction("com.google.android.gms.auth.frp.FRP_BIND").addCategory("android.intent.category.DEFAULT");
+						context.startService(FRPIntent);
+						///M: @}
+						try {
+							startSystemUi(context);
+						} catch (Throwable e) {
+							reportWtf("starting System UI", e);
+						}
+						...
+					}
+			}
+			4.在以下文件添加"///M: @{ ... ///M: @}"部分代码：
+				/frameworks/base/services/core/java/com/android/server/am/ActivityStackSupervisor.java
+				import java.lang.Thread;
+					final int startActivityLocked(...) {
+						...
+						if (err == ActivityManager.START_SUCCESS) {
+							final int userId = aInfo != null ? UserHandle.getUserId(aInfo.applicationInfo.uid) : 0;
+							///M: @{
+							ComponentName SetupCmpName = intent.getComponent();
+							String GMSSetupString = "com.google.android.setupwizard/.SetupWizardActivity";
+							String HWSetupString = "com.huawei.hwstartupguide/.LanguageSelectActivity";
+							if(SetupCmpName != null && (GMSSetupString.equals(SetupCmpName.flattenToShortString()) || HWSetupString.equals(SetupCmpName.flattenToShortString()))) {
+									Slog.i(TAG, "setupwizard sleep");
+									try{
+										Thread.sleep(7000);
+									}catch (Exception e){
+										Slog.i(TAG, e.toString());
+									}
+							}
+							///M: @}
+							Slog.i(TAG, "START u" + userId + " {" + intent.toShortString(true, true, true, false)
+							...
+						}
+						...
+				}
+				第4点修改说明：
+								因为这是64位GMS造成的性能问题，所以如果贵司此项目配置稍差，那么以上的Thread.sleep()时间可能还要加大
+								当然，如果项目配置好，这个时间可以修改缩短进行测试
+								这里sleep造成的影响是，延迟第一次开机时间，即退出动画会延长一段时间退出，整体来说影响不是很大
+
+默认WiFi 、定位开关、灭屏时间
+	alps\frameworks\base\packages\SettingsProvider\res\values
+	Wifi默认开关 <bool name="def_wifi_on">false</bool> false为开，true为关
+	GPS默认开关：<string name="def_location_providers_allowed" translatable="false">gps</string> gps为开，空值为关。
+	灭屏时间默认：<integer name="def_screen_off_timeout">60000</integer>
+
+添加日期格式设置菜单及功能
+	加菜单：alps\packages\apps\Settings\res\xml\date_time_prefs.xml
+	对菜单处理：alps\packages\apps\Settings\src\com\android\settings\DateTimeSettings.java
+	获取设置的日期格式并显示：
+		alps\frameworks\base\packages\Keyguard\src\com\android\keyguard\ KeyguardStatusView.java
+		alps\frameworks\base\packages\SystemUI\src\com\android\systemui\statusbar\policy\ DateView.java
+
+去掉Launcher上面的搜索框
+	注释掉这段代码，alps\packages\apps\Launcher3\src\com\android\launcher3\ Launcher.java
+	public View getOrCreateQsbBar() {
+		……..
+		if (widgetId != -1) {
+		/* mQsb = mAppWidgetHost.createView(this, widgetId, searchProvider);
+        mQsb.setId(R.id.qsb_widget);
+        ///M: ALPS02314317.//TODO : Need fix this workaround.
+       mSearchDropTargetBar.setOnClickListener(new OnClickListener() {
+       		@Override
+             public void onClick(View v) {
+             	onSearchRequested();
+             }
+        });
+        mQsb.updateAppWidgetOptions(opts);
+        mQsb.setPadding(0, 0, 0, 0);
+        mSearchDropTargetBar.addView(mQsb);
+        mSearchDropTargetBar.setQsbSearchBar(mQsb);*/
+    }
+		……….
+	}
+	修改下searchbar高度：alps\packages\apps\Launcher3\res\values\ dimens.xml
+	<dimen name="dynamic_grid_search_bar_height">56dp</dimen>//改成10dp差不多
+
+Launcher主菜单排序
+	alps\packages\apps\Launcher3\src\com\android\launcher3\allapps\ AlphabeticalAppsList.java
+		private void onAppsUpdated() {
+			…..
+			//add by byt start
+			对mApps处理，修改成需要显示的顺序
+			//add end
+			// Recompose the set of adapter items from the current set of apps
+    	updateAdapterItems();
+		}
+
+Launcher默认布局
+	alps\packages\apps\Launcher3\src\com\android\launcher3\ InvariantDeviceProfile.java
+	待机界面快捷图标显示初始化在文件的构造函数里面，例如图片大小文字大小，布局是4x4还是5x5。
+	InvariantDeviceProfile(Context context) {
+		…..
+	}
+	主菜单列表Item显示的图片跟文字风格主要在：
+	alps\packages\apps\Launcher3\src\com\android\launcher3\ DeviceProfile.java文件里面初始化。
+		public DeviceProfile(Context context, InvariantDeviceProfile inv,Point minSize, Point maxSize,int width, int height, boolean isLandscape) {
+					…….
+		}
+	默认布局用这种格式
+		<favorite
+        launcher:className="com.google.android.apps.youtube.app.WatchWhileActivity"
+        launcher:packageName="com.google.android.youtube"
+        launcher:screen="1"
+        launcher:x="0"
+        launcher:y="3" />
+		不要使用这种格式
+   <resolve
+        launcher:screen="0"
+        launcher:x="3"
+        launcher:y="3" >
+        …
+	</resolve>
+
+主菜单STK应用显示运营商名称
+alps\vendor\mediatek\proprietary\packages\apps\Stk\src\com\android\stk\StkAppService.java
+	1.	发送sim卡名称广播
+		private final class ServiceHandler extends Handler {
+    	@Override
+ 			public void handleMessage(Message msg) {
+				………
+				//add by byt start
+				try{
+     			for(int i = 0; i<mStkContext.length;i++){
+	         	if(mStkContext[i].mCurrentMenu == null)continue;
+  	          String title = mStkContext[i].mCurrentMenu.title;
+    	        if((i==0&&!sim1Name.equals(title)) || (i!=0&&!sim2Name.equals(title))){
+ 								 Intent intent = new Intent();                 intent.setAction("com.byt.CHANGE_STK_APP_NAME");
+                 intent.putExtra("stk_sim_name", title);
+                 intent.putExtra("stk_sim_slotid", i);
+                 sendBroadcast(intent);
+            	}
+       			}           
+ 			}catch(Exception e){ }
+				//add end
+			}
+			…….
+		}
+	2.	监听广播并更新Launcher界面
+	alps\packages\apps\Launcher3\src\com\android\launcher3\ MTKUnreadLoader.java
+	实现方法alps\packages\apps\Launcher3\src\com\android\launcher3\Launcher.java
+	alps\packages\apps\Launcher3\src\com\android\launcher3\Workspace.java
+	alps\packages\apps\Launcher3\src\com\android\launcher3\Folder.java
+	alps\packages\apps\Launcher3\src\com\android\launcher3\allapps\ AlphabeticalAppsList.java
+		public void updateApps(List<AppInfo> apps) {
+			……
+			for (int i = 0; i < size; i++) {
+           ……
+            //add by byt start
+						String name = MTKUnreadLoader.getSTKName(appInfo.componentName);
+            if(!TextUtils.isEmpty(name)){
+                appInfo.title = name;
+            }
+          	//add by byt end
+      }
+			……
+		}
+	alps\packages\apps\Launcher3\src\com\android\launcher3\ BubbleTextView.java 
+ 
+电量百分比显示
+	1.	加菜单开关
+	alps\packages\apps\Settings\src\com\mediatek\settings\fuelgauge\ PowerUsageExts.java
+		在initPowerUsageExtItems()方法里面添加
+		在onPowerUsageExtItemsClick()方法里面添加
+ 	2.	加界面显示百分比电量
+ 	alps\frameworks\base\packages\SystemUI\res\layout\ status_bar.xml
+ 	alps\frameworks\base\packages\SystemUI\src\com\android\systemui\statusbar\phone\ PhoneStatusBar.java
+		protected PhoneStatusBarView makeStatusBarView() {
+			……..
+  		mBatteryController = new BatteryController(mContext);
+			mBatteryLevel = (TextView) mStatusBarView.findViewById(R.id.battery_level);
+			mBatteryController.addLabelView(mBatteryLevel);
+			………
+		}
+	alps\frameworks\base\packages\SystemUI\src\com\android\systemui\statusbar\policy\ BatteryController.java
+ 
+power键reboot、飞行模式、情景模式
+	alps\frameworks\base\core\res\res\values\ config.xml
+	frameworks\base\services\core\java\com\android\server\policy\ GlobalActions.java
+		private static final String GLOBAL_ACTION_KEY_REBOOT = "reboot";\\add by byt
+			在createDialog()方法中添加
+				alps\frameworks\base\core\java\android\view\ WindowManagerPolicy.java
+				alps\frameworks\base\services\core\java\com\android\server\power\ ShutdownThread.java
+			主要修改reboot和shutdown显示的字符串
+				在shutdownInner方法里面
+  
+默认墙纸和墙纸列表
+	默认墙纸修改：alps\frameworks\base\core\res\res\ drawable-xxx\ default_wallpaper.jpg
+		drawable-xxx对应分辨率文件夹
+	添加墙纸：
+		alps\packages\apps\Launcher3\WallpaperPicker\res\values-nodpi\ wallpapers.xml
+
+内置号码
+	ContentValues values = new ContentValues();
+    	values.put(RawContacts.ACCOUNT_NAME, "Phone");
+    	values.put(RawContacts.ACCOUNT_TYPE, "Local Phone Account");
+    	
+	Uri rawContentUri = context.getContentResolver().insert(RawContacts.CONTENT_URI, values);
+    	long urirowid = ContentUris.parseId(rawContentUri);  	
+    	//insert name and number
+    	values.clear();
+    	values.put(StructuredName.RAW_CONTACT_ID, urirowid);
+    	values.put(Data.MIMETYPE, StructuredName.CONTENT_ITEM_TYPE);
+    	values.put(StructuredName.DISPLAY_NAME, "Micromax Care");
+    	context.getContentResolver().insert(Data.CONTENT_URI, values);
+    	
+    	//inset number
+    	values.clear();
+    	values.put(Phone.RAW_CONTACT_ID, urirowid);
+    	values.put(Data.MIMETYPE, Phone.CONTENT_ITEM_TYPE);
+      values.put(Phone.NUMBER, "18605008286");
+      context.getContentResolver().insert(Data.CONTENT_URI, values);  	
+        
+    	values.clear();
+    	values.put(Phone.RAW_CONTACT_ID, urirowid);
+    	values.put(Data.MIMETYPE, Email.CONTENT_ITEM_TYPE);
+      values.put(Email.TYPE, Email.TYPE_WORK);
+      values.put(Email.IS_PRIMARY, 1);
+      values.put(Email.ADDRESS, "service.superfone@micromaxinfo.com");
+      context.getContentResolver().insert(Data.CONTENT_URI, values);  
+
+内置群组
+	ContentValues values = new ContentValues();
+	values.put(RawContacts.ACCOUNT_NAME, "Phone");
+	values.put(RawContacts.ACCOUNT_TYPE, "Local Phone Account");
+	values.put(Groups.TITLE, GroupName);
+	final ContentResolver resolver = getContentResolver();
+	final Uri groupUri = resolver.insert(Groups.CONTENT_URI, values);
+
+浏览器默认搜索引擎及定制搜索引擎
+	alps\vendor\mediatek\proprietary\frameworks\base\res\res\values-xx\ donottranslate-new-search_engines.xml
+	values-xx 代表对应的语言。donottranslate-new-search_engines.xml这个文件写在第一个代表默认的
+ 
+默认浏览器
+	/frameworks/base/services/core/java/com/android/server/pm/PackageManagerService.java
+ 	初始化函数里面添加调用方法
+ 		setDefaultBrowser();
+ 	 	private final void setDefaultBrowser(){
+	 			Log.d("debug_default","setDefaultBrowser is called.");
+	      if(!isFirstBoot()) {
+	        	Log.d("debug_default","not first boot, return");
+	        	return;
+	      }
+	      String DefaultPackageName = "com.opera.mini.native";  ----- 默认浏览器包名
+        String DefaultActivityName = "com.opera.mini.android.Browser";----- 默认浏览器类名
+                
+        String str1 = "android.intent.category.DEFAULT";
+        String str2 = "android.intent.category.BROWSABLE";
+        String str3 = "android.intent.action.VIEW";
+        //intent filter
+        IntentFilter filter = new IntentFilter(str3);
+        filter.addCategory(str1);
+        filter.addCategory(str2);
+        filter.addDataScheme("http");
+        //intent
+        Intent intent = new Intent(str3);
+        intent.addCategory(str2);
+        intent.addCategory(str1);
+        Uri uri = Uri.parse("http://");
+        intent.setDataAndType(uri, null);
+        
+        //set UC,if your want set other browser as default, modify below code, add package name and activiy name
+        ComponentName component = new ComponentName(DefaultPackageName,DefaultActivityName);
+        //find all browsers
+        List<ResolveInfo> resolveInfoList = queryIntentActivities(intent,intent.getType(),PackageManager.GET_INTENT_FILTERS, 0);
+        int size = resolveInfoList.size();
+        ComponentName[] arrayOfComponentName = new ComponentName[size];
+        //make sure the default browser in phone
+        boolean no_UC = true;
+        for (int i = 0; i < size; i++){
+        	ActivityInfo activityInfo = resolveInfoList.get(i).activityInfo;
+        	String packageName = activityInfo.packageName;
+        	String className = activityInfo.name;
+        	//if your want set other browser as default, modify below package name
+        	if (packageName.equals(DefaultPackageName)){
+        		no_UC = false;
+        	}
+        	ComponentName componentName = new ComponentName(packageName, className);
+        	arrayOfComponentName[i] = componentName;
+        }
+        if (no_UC){
+        	Log.d("debug_default","no uc package");
+        	return;
+        }else{
+        	Log.d("debug_default","uc package is in, set it as Preferred.");
+        }
+        //set default
+        addPreferredActivity2(filter,IntentFilter.MATCH_CATEGORY_SCHEME, arrayOfComponentName,component);
+        Log.d("debug_default","add UC to PreferredActivity");
+    }
+    public void addPreferredActivity2(IntentFilter filter, int match, ComponentName[] set, ComponentName activity) {
+    		Log.d("debug_default","addPreferredActivity2 is called.");
+    		synchronized (mPackages) {           
+    				filter.dump(new LogPrinter(Log.INFO, TAG), "  ");
+    				mSettings.editPreferredActivitiesLPw(0).addFilter(new PreferredActivity(filter, match, set, activity,true));
+            mSettings.writePackageRestrictionsLPr(0);
+    				scheduleWriteSettingsLocked();            
+    		}
+    }
+  
+
+默认Launcher
+	frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java
+	frameworks/base/services/core/java/com/android/server/pm/PackageManagerService.java 
+		boolean startHomeActivityLocked(int userId, String reason) {
+        if (mFactoryTest == FactoryTest.FACTORY_TEST_LOW_LEVEL
+                && mTopAction == null) {
+            // We are running in factory test mode, but unable to find
+            // the factory test app, so just sit around displaying the
+            // error message and don't try to start anything.
+            return false;
+        }   
+		
+				//Modify by for default launcher by jchb 16-11-17 start
+				final PackageManager mPm = mContext.getPackageManager();
+				Intent homeIntent=new Intent();
+				homeIntent.addCategory(Intent.CATEGORY_HOME);
+				homeIntent.setAction(Intent.ACTION_MAIN);
+				homeIntent.addCategory(Intent.CATEGORY_DEFAULT);
+				ResolveInfo info = mPm.resolveActivity(homeIntent, PackageManager.MATCH_DEFAULT_ONLY);
+				if("android".equals(info.activityInfo.packageName)){ //if there is a default Launcher?
+					ComponentName DefaultLauncher=new ComponentName("com.android.launcher3","com.android.launcher3.Launcher"); //here set the package name and class name of default launcher.
+					ArrayList<ResolveInfo> homeActivities = new ArrayList<ResolveInfo>();
+					ComponentName currentDefaultHome = mPm.getHomeActivities(homeActivities);
+					ComponentName[]mHomeComponentSet = new ComponentName[homeActivities.size()];
+					for (int i = 0; i < homeActivities.size(); i++) {
+						final ResolveInfo candidate = homeActivities.get(i);
+						Log.d(TAG,"homeActivitie: candidate = "+candidate);
+						final ActivityInfo activityInfo= candidate.activityInfo;
+						ComponentName activityName = new ComponentName(activityInfo.packageName, activityInfo.name);
+						mHomeComponentSet[i] = activityName;
+					}
+					IntentFilter mHomeFilter = new IntentFilter(Intent.ACTION_MAIN);
+					mHomeFilter.addCategory(Intent.CATEGORY_HOME);
+					mHomeFilter.addCategory(Intent.CATEGORY_DEFAULT);
+					List<ComponentName>Activities=new ArrayList();
+					mPm.replacePreferredActivity(mHomeFilter, IntentFilter.MATCH_CATEGORY_EMPTY,mHomeComponentSet, DefaultLauncher);
+				}
+				//Modify end  
+        .....
+        return true;
+    } 
+ 
+ 		ResolveInfo findPreferredActivity(Intent intent, String resolvedType, int flags, .....
+  	{
+  								for (int j=0; j<N; j++) {
+                            final ResolveInfo ri = query.get(j);
+                            if (!ri.activityInfo.applicationInfo.packageName
+                                    .equals(ai.applicationInfo.packageName)) {
+                                continue;
+                            }
+                            if (!ri.activityInfo.name.equals(ai.name)) {
+                                continue;
+                            }
+											//Modify by for default launcher by jchb 16-11-17 start
+											    if(!(intent.getAction() != null && intent.getAction().equals(intent.ACTION_MAIN) && intent.getCategories()!=null && intent.getCategories().contains(intent.CATEGORY_HOME))) {       
+												   Log.d(TAG,"Home");      
+											    }else {
+	                            if (removeMatches) {
+	                                pir.removeFilter(pa);
+	                                changed = true;
+	                                if (DEBUG_PREFERRED) {
+	                                    Slog.v(TAG, "Removing match " + pa.mPref.mComponent);
+	                                }
+	                                break;
+	                            }
+							 						}
+
+                            // Okay we found a previously set preferred or last chosen app.
+                            // If the result set is different from when this
+                            // was created, we need to clear it and re-ask the
+                            // user their preference, if we're looking for an "always" type entry.
+                            if (always && !pa.mPref.sameSet(query)) {
+								
+            					if(!(intent.getAction() != null && intent.getAction().equals(intent.ACTION_MAIN) && intent.getCategories()!=null && intent.getCategories().contains(intent.CATEGORY_HOME))) {
+	                                Slog.i(TAG, "Result set changed, dropping preferred activity for "
+	                                        + intent + " type " + resolvedType);
+	                                if (DEBUG_PREFERRED) {
+	                                    Slog.v(TAG, "Removing preferred activity since set changed "
+	                                            + pa.mPref.mComponent);
+	                                }
+	                                pir.removeFilter(pa);
+	                                // Re-add the filter as a "last chosen" entry (!always)
+	                                PreferredActivity lastChosen = new PreferredActivity(
+	                                        pa, pa.mPref.mMatch, null, pa.mPref.mComponent, false);
+	                                pir.addFilter(lastChosen);
+	                                changed = true;
+	                                return null;
+				 				}
+								//Modify end
+                            }
+
+                            // Yay! Either the set matched or we're looking for the last chosen
+                            if (DEBUG_PREFERRED || debug) Slog.v(TAG, "Returning preferred activity: "
+                                    + ri.activityInfo.packageName + "/" + ri.activityInfo.name);
+                            return ri;
+                        }
+                    }
+                } finally {....
+                
+	   public void systemReady() {
+	   ....
+	   //Modify by for default launcher by jchb 16-11-17 start
+			if(isFirstBoot()) {
+				String examplePackageName = "com.android.launcher3";  //default  package name of launcher
+				String exampleActivityName = "com.android.launcher3.Launcher"; //default  activity name of  launcher   
+				Intent intent=new Intent(Intent.ACTION_MAIN);
+				intent.addCategory(Intent.CATEGORY_HOME);
+				final int callingUserId = UserHandle.getCallingUserId();
+			
+				List<ResolveInfo> resolveInfoList = queryIntentActivities(intent,null, PackageManager.GET_META_DATA,callingUserId);
+				if(resolveInfoList != null){
+					int size = resolveInfoList.size();
+					for(int j=0;j<size;){
+						final ResolveInfo r = resolveInfoList.get(j);
+						if(!r.activityInfo.packageName.equals(examplePackageName)) { 
+							resolveInfoList.remove(j);
+							size -= 1;
+						} else {
+							j++;
+						}
+					} 
+				   ComponentName[] set = new ComponentName[size];
+				   ComponentName defaultLauncher=new ComponentName(examplePackageName, exampleActivityName);
+				   int defaultMatch=0;
+				   for(int i=0;i<size;i++){
+					   final ResolveInfo resolveInfo = resolveInfoList.get(i);
+					   Log.d(TAG,"resolveInfo = " + resolveInfo.toString());
+					   set[i] = new ComponentName(resolveInfo.activityInfo.packageName,resolveInfo.activityInfo.name);
+					   if(defaultLauncher.getClassName().equals(resolveInfo.activityInfo.name)){
+						   defaultMatch = resolveInfo.match;
+					   }
+				   }
+				   Log.d(TAG,"defaultMatch="+Integer.toHexString(defaultMatch));
+				   IntentFilter filter=new IntentFilter();
+				   filter.addAction(Intent.ACTION_MAIN);
+				   filter.addCategory(Intent.CATEGORY_HOME);
+				   filter.addCategory(Intent.CATEGORY_DEFAULT);
+			  
+				   addPreferredActivity2(filter, defaultMatch, set, defaultLauncher);
+				}
+			}
+    }
+		public void addPreferredActivity2(IntentFilter filter, int match,ComponentName[] set, ComponentName activity) {
+			synchronized (mPackages) {     
+				filter.dump(new LogPrinter(Log.INFO, TAG), "  ");
+				mSettings.editPreferredActivitiesLPw(0).addFilter(new PreferredActivity(filter, match, set, activity, true));
+				scheduleWriteSettingsLocked();     
+			}
+		}
+	//Modify end
+
+    @Override
+    public boolean isSafeMode() {
+        return mSafeMode;
+    }
+ 
+
+默认短信彩信单双卡报告开关
+	alps\vendor\mediatek\proprietary\packages\apps\Mms\src\com\mediatek\setting\ MmsPreferenceActivity.java
+		修改默认值需要注意单双卡使用的xml文件是不同的，所以除了修改所有xml对应的pref_key_mms_delivery_reports key对应的默认值，还需要修改代码获取这个key的赋值，例如：
+		if (mMmsDeliveryReport != null) {
+			mMmsDeliveryReport.setChecked(sp.getBoolean(mMmsDeliveryReport.getKey(), /*false*/true));
+		}
+		修改restoreDefaultPreferences(){}方法中
+			editor.putBoolean(Long.toString(subId) + "_" + MMS_DELIVERY_REPORT_MODE, /*false*/true);
+	alps\vendor\mediatek\proprietary\packages\apps\Mms\src\com\mediatek\setting\ SubSelectAdapter.java
+  		public boolean isChecked(int position) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(mContext);
+        boolean defaultValue = false;
+        if (MmsPreferenceActivity.AUTO_RETRIEVAL.equals(mPreferenceKey)) {
+            defaultValue = true;
+        }
+        return prefs.getBoolean(Long.toString((mList.get(position)).getSubscriptionId()) + "_"
+                + mPreferenceKey,
+                defaultValue);
+		}
+		
+7Bit
+	frameworks\base\telephony\java\com\android\internal\telephony\ GsmAlphabet.java
+  	static {
+      enableCountrySpecificEncodings();
+			………..
+			//add by byt start
+        SparseIntArray defaultCharToGsm = sCharsToGsmTables[0];
+        defaultCharToGsm.put('\u00C1', 0x41);
+        defaultCharToGsm.put('\u00C0', 0x41);
+        defaultCharToGsm.put('\u00E1', 0x61);
+        defaultCharToGsm.put('\u00E0', 0x61);
+        
+        defaultCharToGsm.put('\u00C8', 0x45);
+        defaultCharToGsm.put('\u00E8', 0x65);
+        
+        defaultCharToGsm.put('\u00CD', 0x49);
+        defaultCharToGsm.put('\u00CC', 0x49);
+        defaultCharToGsm.put('\u00CF', 0x49);
+        defaultCharToGsm.put('\u00ED', 0x69);
+        defaultCharToGsm.put('\u00EC', 0x69);
+        defaultCharToGsm.put('\u00EF', 0x69);
+        
+        defaultCharToGsm.put('\u00D3', 0x4F);
+        defaultCharToGsm.put('\u00D2', 0x4F);
+        defaultCharToGsm.put('\u00F3', 0x6F);
+        defaultCharToGsm.put('\u00F2', 0x6F);
+        
+        defaultCharToGsm.put('\u00D9', 0x55);
+        defaultCharToGsm.put('\u00DA', 0x55);
+        defaultCharToGsm.put('\u00DC', 0x55);
+        defaultCharToGsm.put('\u00F9', 0x75);
+        defaultCharToGsm.put('\u00FA', 0x75);
+        defaultCharToGsm.put('\u00FC', 0x75);
+        
+        defaultCharToGsm.put('\u00C7', 0x43);
+        defaultCharToGsm.put('\u00E7', 0x63);
+				//add end
+        
+        sCharsToShiftTables = new SparseIntArray[numTables];
+				……..
+		}
+		
+彩信默认附件大小
+	修改添加一个彩信附件大小并默认：
+	mtk_arrays.xml
+   <string-array name="pref_mms_size_limit_choices" translatable="false">
+        <item>100K</item>
+        <item>200K</item>
+        <item>600K</item>
+    </string-array>
+    <string-array name="pref_mms_size_limit_values" translatable="false">
+        <item>100</item>
+        <item>200</item>
+        <item>600</item>
+    </string-array>
+	mms_confg.xml
+		<int name="maxMessageSize">614400</int>
+		mmspreferences.xml
+			<ListPreference android:key="pref_key_mms_size_limit"
+            android:title="@string/pref_title_mms_size_limit"
+            android:dialogTitle="@string/pref_title_mms_size_limit"
+            android:summary="@string/pref_summary_mms_size_limit"
+						android:defaultValue="600" android:entries="@array/pref_mms_size_limit_choices"/>
+		multicardpreferences.xml
+			<ListPreference
+            android:key="pref_key_mms_size_limit"
+            android:title="@string/pref_title_mms_size_limit"
+            android:dialogTitle="@string/pref_title_mms_size_limit"
+            android:summary="@string/pref_summary_mms_size_limit"
+            android:defaultValue="600"
+            android:entries="@array/pref_mms_size_limit_choices"
+            android:entryValues="@array/pref_mms_size_limit_values"/>
+		preferences.xml
+			<ListPreference
+            android:key="pref_key_mms_size_limit"
+            android:title="@string/pref_title_mms_size_limit"
+            android:dialogTitle="@string/pref_title_mms_size_limit"
+            android:summary="@string/pref_summary_mms_size_limit"
+            android:defaultValue="600"
+            android:entries="@array/pref_mms_size_limit_choices"
+            android:entryValues="@array/pref_mms_size_limit_values"/>
+		MmsConfig.xml
+			private static int mMaxMessageSize = 600 * 1024;
+		MessageUntils.java
+			public static void setMmsLimitSize(Context context) {
+				…….
+			  if (sp != null) {
+            mSizeLimitTemp = sp.getString("pref_key_mms_size_limit", "600");
+        }
+        if (mSizeLimitTemp != null && 0 == mSizeLimitTemp.compareTo("100")) {
+            mMmsSizeLimit = 100;
+        } else if (mSizeLimitTemp != null && 0 == mSizeLimitTemp.compareTo("200")) {
+            mMmsSizeLimit = 200;
+        } else {
+            mMmsSizeLimit = 600;
+        }
+				…….
+			}
+		MmspreferenceActivity.java
+			private static final String SIZE_LIMIT_600 = "600";
+			private void setListPrefSummary() {
+				…..
+				mSizeLimitTemp = sp.getString("pref_key_mms_size_limit", "600");
+				…..
+			}
+			private void restoreDefaultPreferences() {
+				……
+				editor.putString(MMS_SIZE_LIMIT, SIZE_LIMIT_600);
+				……
+			}
+
+
+Email 附件大小
+	\Email\emailcommon\src\com\android\emailcommon\utility\AttachmentUtilities.java
+		public static final int MAX_ATTACHMENT_DOWNLOAD_SIZE = (5 * 1024 * 1024);
+		public static final int MAX_ATTACHMENT_UPLOAD_SIZE = (5 * 1024 * 1024);
+			
+通话耳机键挂断电话
+	alps\packages\services\Telecomm\src\com\android\server\telecom\ CallsManager.java
+		boolean onMediaButton(int type) {
+			…….
+			Call ringingCall = getFirstCallWithState(CallState.RINGING);
+      	if (ringingCall == null) {
+					//add by byt start
+					Call callToHangup = getFirstCallWithState(
+					CallState.RINGING, CallState.DIALING, CallState.ACTIVE, CallState.ON_HOLD);
+          if (callToHangup != null) {
+          	disconnectCall(callToHangup);
+            return true;
+					}
+					//add end
+          mCallAudioManager.toggleMute();
+          return true;
+   			}
+				……
+			}
+
+修改开机LOGO（关机充电图标也在这里）
+	先获取\alps\device\tangxun\tx6735m_65u_m0_l9\ProjectConfig.mk中BOOT_LOGO的值，此处BOOT_LOGO = hd720
+	替换\alps\vendor\mediatek\proprietary\bootable\bootloader\lk\dev\logo\hd720目录中的hd720_kernel.bmp和hd720_uboot.bmp
+
+
+系统分区修改
+	\alps\device\mediatek\build\build\tools\ptgen\MT6735M\partition_table_MT6735M.xls，
+	修改前要先确认是nand还是emmc。如果增大了system分区一般要减小usedata分区
+
+用户版默认打开mtklog修改
+	\alps\device\mediatek\common\mtklog\mtklog-config-basic-user.prop，
+	该文件会编译为\alps\out\target\product\tx6735m_65u_m0_l9\system\etc\mtklog-config.prop
+
+用户版默认打开usb调试修改
+\build\core\main.mk
+	DITIONAL_DEFAULT_PROPERTIES += ro.debuggable=1
+\frameworks\base\packages\SettingsProvider\src\com\android\providers\settings\DatabaseHelper.java
+	loadSecureSettings(****)
+			loadSetting(stmt, Settings.Secure.DEVELOPMENT_SETTINGS_ENABLED, 1);
+            loadSetting(stmt, Settings.Secure.ADB_ENABLED, 1);
+
+user版本还需要加上以下内容才能够默认开启调试模式			
+\frameworks\base\packages\SystemUI\src\com\android\systemui\usb\UsbDebuggingActivity.java
+	oncreate 里面加上这一段
+        try {
+            IBinder b = ServiceManager.getService(USB_SERVICE);
+            IUsbManager service = IUsbManager.Stub.asInterface(b);
+            service.allowUsbDebugging(true, mKey);
+            finish();
+        } catch (Exception e) {
+		}
+
+如果以上还不行，则考虑以下部分
+\frameworks\base\service\../usb/usbDeviceManager.java中
+	public UsbHandler(Lopper looper){
+		SystemProperties.get("persist.sys.usb.config","adb");这个地方的配置需要注意一下
+	}
+	而persist.sys.usb.config 中 adb 的配置是在 alps/build/tools/post_process_props.py中根据 ro.debuggable=1 or 0
+	来设置的，1就是开启 adb，0就是关闭 adb debug，而这个 ro.debuggable 也是在 alps/buid.core/main.mk中设置
+	以上设置，只是让 adb shell ，而不是 root,需要开启root，
+	需要再 system/core/adb/adb.c 中的 should_drop_privileges()函数中，在#ifndef ALLOW_ADBD_ROOT 时返回 0，而不是1.
+	
+	
+	\alps\device\tangxun\tx6735m_65u_m0_l9\ProjectConfig.mk
+	单双卡修改GEMINI = no   MTK_GEMINI_ENHANCEMENT = no   MTK_SHARE_MODEM_CURRENT = 1，MTK_SINGLE_IMEI = yes 双卡修改为yes yes 2 no
+	MTK_MULTICORE_OBSERVER_APP		对应mtk多核观测器
+	MTK_SIGNATURE_CUSTOMIZATION		系统签名开关
+	MTK_PRIVACY_PROTECTION_LOCK		隐私保护开关，包括防盗追踪
+
+LM平台单卡，双卡，但双卡配置
+	
+N平台单卡，双卡，但双卡配置
+	在Project Config.mk 中
+		MTK_MULTI_SIM_SUPPORT = dsds 双卡
+		MTK_MULTI_SIM_SUPPORT = ss 单卡
+
+签名编译
+	编译系统签名需要输入以下命令(先cd om/alps)
+	development/tools/make_key releasekey  '/C=CN/ST=BeiJing/L=HaiDian/O=MediaTek/OU=WCD/CN=demo/emailAddress=demo@mediatek.com'
+	development/tools/make_key platform    '/C=CN/ST=BeiJing/L=HaiDian/O=MediaTek/OU=WCD/CN=demo/emailAddress=demo@mediatek.com'
+	development/tools/make_key media       '/C=CN/ST=BeiJing/L=HaiDian/O=MediaTek/OU=WCD/CN=demo/emailAddress=demo@mediatek.com'
+	development/tools/make_key shared      '/C=CN/ST=BeiJing/L=HaiDian/O=MediaTek/OU=WCD/CN=demo/emailAddress=demo@mediatek.com' 
+	四个命令分别在alps根目录下生成
+	releasekey releasekey.x509.pem和platform   platform.x509.pem和media      media.x509.pem和shared     shared.x509.pem，
+	以及\alps\build\target\product\security目录下的testkey testkey.x509.pem一共十个文件，
+	复制到\alps\repos\s511_d_s5015_bmb_ax820_om_dual\device\mediatek\common\security\best6580_weg_m_s511目录下以及\alps\build\target\product\security目录下。
+	并确保ProjectConfig.mk中MTK_SIGNATURE_CUSTOMIZATION=yes且MTK_INTERNAL=no
+	签名使用的文件根据ProjectConfig.mk中的配置使用不同路径的签名文件
+	MTK_SIGNATURE_CUSTOMIZATION=yes并且MTK_INTERNAL=no，	/alps/build/target/product/security/[Project]/releasekey
+	MTK_SIGNATURE_CUSTOMIZATION=yes并且MTK_INTERNAL=yes		/alps/build/target/product/security/common/releasekey
+	MTK_SIGNATURE_CUSTOMIZATION=no，					/alps/build/target/product/security/testkey
+
+查看apk签名			
+	jarsigner -verify -verbose -certs SogouInput_android_v7.apk	输出的CN ST OU等即为签名信息
+	使apk具备系统权限		在AndroidManifest.xml中添加android:sharedUserId="android.uid.system"，并在Android.mk中加上LOCAL_CERTIFICATE := platform	
+
+
+广升差分包制作
+	1.	编译new完之后编译差分包，编译命令为make otapackage。完成后保存\alps\out\target\product\best6580_weg_m_s509目录下*.zip文件(一共有两个)，
+			以及\alps\out\target\product\best6580_weg_m_s509\obj\PACKAGING\target_files_intermediates目录下的*.zip(1个文件)
+	2.	到192.168.9.18上打开工具，选择品牌商，选择OTA差分包制作，选中两个版本的target_files-package.zip，制作差分包(保存在工具根目录)，并一路下一步直到传到后台管理器
+	3.	登录http://mg.adups.cn/ota/loginUser.dobestone/best_8xe2358478514785624，用户bestone，密码best_8xe2。
+			添加测试IMEI，选中工程和IMEI即可。注意要先写IMEI再进入手机菜单。在配置菜单中可以设置显示的语言和简单的翻译，以及一些通知显示方式
+	4.	注意\alps\packages\apps\AdupsFotaApp\FotaInfo.sh文件，其中ro.fota.version为区分两个差分包的版本号，ro.fota.device是区分项目的标志
+			Gmobi的开关ROCK_GOTA_SUPPORT=yes。差分包直接在new完后将下载包发给Gmobi人员，他们会帮我们做差分包
+
+Mtk的Fota对应开关是ProjectConfig.mk中的MTK_SYSTEM_UPDATE_SUPPORT，对应的代码是\alps\vendor\mediatek\proprietary\packages\apps\SystemUpdate，菜单是
+	1.	new完后取\alps\out\target\product\best6580_weg_m_s509\obj\PACKAGING\target_files_intermediates 目录下的*.zip文件，分别命名为old.zip和new.zip
+	2.	cd到alps目录下运行   .\build\tools\releasetools\ota_from_target_files.py   -i old.zip  new.zip  update.zip，可以生成差分包update.zip
+	3.	将update.zip文件放到T卡任意位置，按Power+上键进入Recovery模式，使用音量键选择从SD卡升级选中update.zip即可
+		菜单一般修改\alps\packages\apps\Settings\src\com\mediatek\settings\deviceinfo\DeviceInfoSettingsExts.java中initMTKCustomization方法
+
+隐藏相机图标
+	\alps\vendor\mediatek\proprietary\packages\apps\Camera\src\com\android\camera\DisableCameraReceiver.java 中 needCameraActivity=false 即可
+		
+Launcher固定app位置修改
+\Launcher3\src\com\android\launcher3\allapps\AlphabeticalAppsList.java文件
+	修改文件中onAppsUpdated方法，在最后一句updateAdapterItems()前添加ChangeAppToFirst("com.android.vending","com.android.vending.AssetBrowserActivity");
+	在文件中添加方法
+	private void ChangeAppToFirst(String packageName,String className)
+    {
+    	int index = 0 ;
+    	int i ;
+    	for( i = 0 ; i < mApps.size() ; i ++ )
+    	{
+    		AppInfo info = mApps.get(i) ;
+    		if( packageName.equals(info.componentName.getPackageName()) && className.equals(info.componentName.getClassName()))
+    		{
+    			index = i ;
+    			break ;
+    		}
+    	}
+    	if( index != 0 )
+    	{
+    		AppInfo info = mApps.get(index) ;
+    		mApps.remove(info) ;
+    		mApps.add(0, info) ;
+    	}
+    }
+wifi/蓝牙/Sim卡/数据连接/更多
+	蓝牙默认开关修改Defaults.xml中的def_bluetooth_on。飞航模式默认开关修改Defaults.xml中的def_airplane_mode_on 
+	数据连接默认开修改\alps\device\mediatek\common\device.mk中ro.com.android.mobiledata为true，再修改
+		databaseHelper.java中loadSetting(stmt, Settings.Global.MOBILE_DATA,1)，注意该文件中本来就有对MOBILE_DATA的设置，不要被覆盖了。
+		具体可见DcTrackerBase.java中getDataEnabled方法和handleMobileDataSettingNotFound方法
+	数据漫游默认开在buildinfo.sh中添加echo "ro.com.android.dataroaming=true"，
+		具体可见\alps\frameworks\opt\telephony\src\java\com\android\internal\telephony\dataconnection\DcTrackerBase.java中getDataOnRoamingEnabled方法
+开启拼写检查
+		try{
+			int userId = UserHandle.USER_OWNER;
+			try {
+				userId = ActivityManagerNative.getDefault().getCurrentUser().id;
+			} catch (Exception e) {
+			}
+			Settings.Secure.putIntForUser(getContentResolver(), Settings.Secure.SPELL_CHECKER_ENABLED, 0, userId);
+			String imeId = "com.google.android.inputmethod.latin/com.android.inputmethod.latin.LatinIME";
+			Settings.Secure.putStringForUser(getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD, imeId, userId);
+		}catch(Exception e){
+		}
+  
+简单的实现自动接听功能 》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》
+		[DESCRIPTION]
+		自动接听的功能可以仿照工程模式中AutoAnswer的实现来完成，主要思路就是将是否打开自动接听的标示位存入SharedPreference中，
+		然后来电时根据这个值来决定是否自动接听。
+		[SOLUTION]
+		Android 4.4之前版本：
+				工程模式中AutoAnswer.java界面，当有按下启动自动接听后，就将标示位保存在SharedPreference中，若是有来电，
+				则在InCallScreen启动时，delay一定时间（默认是2s）去接听。相关代码在InCallScreen的mHandler中：
+				case DELAY_AUTO_ANSWER:
+					if(FeatureOption.MTK_VT3G324M_SUPPORT) {
+						if(PhoneApp.getInstance().isVTRinging()) {
+						break;
+						}
+					}
+					try {
+						Context friendContext = createPackageContext("com.mediatek.engineermode",CONTEXT IGNORE_SECURITY);
+						SharedPreferences sh = friendContext.getSharedPreferences("AutoAnswer",MODE_WORLD_READABLE);
+						
+						if (sh.getBoolean("flag",false)){
+							if(null != mCM) {
+								PhoneUtils.answerCall(mCM.getFirstActiveRingingCall());
+							}
+						}
+					} catch (NameNotFoundException e) {
+						e.printStackTrace();
+					}
+			
+		Android 4.4及之后版本：
+				工程模式中AutoAnswer.java界面，当有按下启动自动接听后，就将标示位保存在SharedPreference中，若是有来电，
+				则在InCallActivity启动时，delay一定时间（默认是3s）去接听。相关代码在callNotifier.java的mHandler中：
+				private void applyAutoAnswerCall () {
+				    log("applyAutoAnswerCall~~");
+					if(FeatureOption.MTK_VT3G324M_SUPPORT) {
+						if(VTCallUtils.isVTRinging()) {
+						return;
+						}
+					}
+					try {
+						Context friendContext = createPackageContext("com.mediatek.engineermode",CONTEXT IGNORE_SECURITY);
+						SharedPreferences sh = friendContext.getSharedPreferences("AutoAnswer",MODE_WORLD_READABLE);
+						
+						if (sh.getBoolean("flag",false)){
+							if(null != mCM) {
+								PhoneUtils.answerCall(mCM.getFirstActiveRingingCall());
+							}
+						}
+					} catch (NameNotFoundException e) {
+						e.printStackTrace();
+					}
+				}
+		Android 5.0及之后版本：
+				工程模式中AutoAnswer.java界面，当有按下启动自动接听后，就将标示位保存在SharedPreference中，若是有来电，
+				则在InCallActivity启动时，delay一定时间（默认是3s）去接听。相关代码在CallsManager.java的mAutoAnswerHandler中：
+				private void applyAutoAnswerCall () {
+				    log("applyAutoAnswerCall~~");
+					try {
+						Context friendContext = createPackageContext("com.mediatek.engineermode",CONTEXT IGNORE_SECURITY);
+						SharedPreferences sh = friendContext.getSharedPreferences("AutoAnswer",MODE_WORLD_READABLE);
+						
+						if (sh.getBoolean("flag",false)){
+							if(null != incomingCall) {
+								answerCall(incomingCall,VideoProfile.VideoState.BIDIRECTIONAL));
+							}
+						}
+					} catch (NameNotFoundException e) {
+						e.printStackTrace();
+					}
+				}
+
+开机向导 mms报错》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》
+    /vendor/mediatek/proprietary/packages/apps/Mms/src/com/android/mms/transaction/SmsReceiver.java
+    public static void finishStartingService(Service service, int startId) {
+        /// M:
+        MmsLog.d(MmsApp.TXN_TAG, "Sms finishStartingService");
+        synchronized (mStartingServiceSync) {
+            if (mStartingService != null) {
+                if (service.stopSelfResult(startId)) {
+                	  +/* modify by zengxiao for:error */
+                    +try {
+                    +    if (mStartingService.isHeld()) {
+                    +        mStartingService.release();
+                    +    }
+                    +} catch (Exception e) {
+                    +}
+                    +/* modify end */                	                	
+                }
+            }
+        }
+    }
+
+
+开机向导过程中，wifi界面，出现设置报错》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》》
+		WifiSettingsForSetupWizard.java
+		以下方法里面加上 try catch 异常处理（使用了未初始化的view对象）
+		protected void updateFooter(boolean isEmpty) {
+		   try{
+		 	 }catch(Exception e){}
+		}
+
+网络运营商名称显示&SIM名称显示
+		https://onlinesso.mediatek.com/Pages/FAQ.aspx?List=SW&FAQID=FAQ09394
+
+网络运营商名称显示规则（锁屏界面，下拉列表）---网络名称 客制化方法 和 问题处理flow
+		https://onlinesso.mediatek.com/Pages/FAQ.aspx?List=SW&FAQID=FAQ08919
+		
+
+sim卡联网接受ota信息，不需要输入密码		
+	\vendor\mediatek\proprietary\packages\apps\Omacp\src\com\mediatek\omacp\message\OmacpMessageSettingsDetail.java
+		//modify for dont input password when ota received by lxy 2016-3-16
+       if (!sPinUnlock) {
+           sPinUnlock = true;
+            markMessageAsPinUnlock();
+            //showDialog(DIALOG_UNLOCK_PIN);
+            //return;
+        }
+        //modify end
+	\vendor\mediatek\proprietary\packages\apps\Omacp\src\com\mediatek\omacp\message\OmacpReceiverService.java      
+		//modify for dont input password when ota received by lxy 2016-3-16
+        if (!isCorrect) {
+            //return;
+        }
+		//modify end
+        .....
+		//modify for dont input password when ota received by lxy 2016-3-16
+		//        if (sec == null || mac == null || sec.equalsIgnoreCase("") || sec.equalsIgnoreCase("0") || mac.equalsIgnoreCase("")) {
+		//            value.put("pin_unlock", 1);
+		//        } else {
+		//            value.put("pin_unlock", 0);
+		//        }
+        value.put("pin_unlock", 1);
+		//modify end	
+
+  		
+  		
+铃声属性
+	有一个 Android_loop true 、false ，mediaplayer 会自动根据文件的这个属性设置循环播放
+	可以用kkplayer 查看文件属性，用 千千静音 修改属性
+
+
+
+
+ActionBar 获得焦点，还要改下面的地方：
+	\frameworks\base\core\res\res\values\styles.xml
+		这个文件有对touchscreenBlocksFocus赋值
+    <style name="Widget.Toolbar">
+        <item name="titleTextAppearance">@style/TextAppearance.Widget.Toolbar.Title</item>
+        <item name="subtitleTextAppearance">@style/TextAppearance.Widget.Toolbar.Subtitle</item>
+        <item name="minHeight">?attr/actionBarSize</item>
+        <item name="titleMargins">4dp</item>
+        <item name="maxButtonHeight">56dp</item>
+        <item name="buttonGravity">top</item>
+        <item name="navigationButtonStyle">@style/Widget.Toolbar.Button.Navigation</item>
+        <item name="collapseIcon">?attr/homeAsUpIndicator</item>
+        <item name="collapseContentDescription">@string/toolbar_collapse_description</item>
+        <item name="contentInsetStart">16dp</item>
+        <item name="touchscreenBlocksFocus">true</item>
+    </style>
+    
+
+低配项目，刚开机立即使用耳机键暂停音乐，会延迟很多秒才有效
+	把广播设置为前台
+	4.4
+	--- a/media/java/android/media/MediaFocusControl.java
+	+++ b/media/java/android/media/MediaFocusControl.java
+	@@ -776,6 +776,8 @@ public class MediaFocusControl implements OnFinished {
+      */
+     private void dispatchMediaKeyEventForCalls(KeyEvent keyEvent, boolean needWakeLock) {
+         Intent keyIntent = new Intent(Intent.ACTION_MEDIA_BUTTON, null);
++        Log.e(TAG,"dispatchMediaKeyEventForCalls mIsRinging= "+mIsRinging+",mode= "+mAudioService.getMode());
++        keyIntent.addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
+         keyIntent.putExtra(Intent.EXTRA_KEY_EVENT, keyEvent);
+         keyIntent.setPackage(mMediaReceiverForCalls.getPackageName());
+         if (needWakeLock) {
+@@ -803,6 +805,8 @@ public class MediaFocusControl implements OnFinished {
+             mMediaEventWakeLock.acquire();
+         }
+         Intent keyIntent = new Intent(Intent.ACTION_MEDIA_BUTTON, null);
++        Log.e(TAG,"dispatchMediaKeyEvent");
++        keyIntent.addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
+         keyIntent.putExtra(Intent.EXTRA_KEY_EVENT, keyEvent);
+         synchronized(mRCStack) {
+             if (!mRCStack.empty()) {
+
+
+6.0
+--- a/services/core/java/com/android/server/media/MediaSessionRecord.java
++++ b/services/core/java/com/android/server/media/MediaSessionRecord.java
+ 
+         public boolean sendMediaButton(KeyEvent keyEvent, int sequenceId, ResultReceiver cb) {
+             Intent mediaButtonIntent = new Intent(Intent.ACTION_MEDIA_BUTTON);
++            mediaButtonIntent.addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
+             mediaButtonIntent.putExtra(Intent.EXTRA_KEY_EVENT, keyEvent);
+             try {
+                 mCb.onMediaButton(mediaButtonIntent, sequenceId, cb);
+
+
+
+竖屏改成横屏显示、Android 竖屏横显示
+	竖屏调成横屏显示的只能通过先确定LCM和sensor的角度，然后再将camera，三方app的preview，capture调正确。
+	修改方案：
+	1.修改MTK_LCM_PHYSICAL_ROTATION = 90 竖屏变成横屏
+	2.调整sensor角度，在config_static_metadata_common.h中配置sensor的角度
+	sensor角度的调整要根据实际sensor的安装方向来确定，实际安装的方向是多少就设置成多少
+	3.因为三方APP会默认旋转一个角度，不同的三方app这个默认旋转角度的值还不一样。所以要使三方app的显示也正常要看三方app的旋转角度和相机sensor的安装角度分别是多少，
+	有些组合值可以调有些不能调。
+	
+	需要客户确认的问题：
+	1.客户使用的camera app是客户自己的还是MTK的？
+	2.camera sensor的实际安装方向是多少？
+	3.客户用来测试的第三方APP有哪几个？主要care的三方APP是哪几个？
+	4.相机sensor是否支持flip & mirror功能？
+
+修改点：
+	1，alps\frameworks\base\core\java\android\app\Activity.java
+ 			public void setRequestedOrientation(@ActivityInfo.ScreenOrientation int requestedOrientation) {
+    		requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
+    		.....
+    	
+	2，alps\frameworks\base\packages\SystemUI\src\com\android\systemui\statusbar\phone\StatusBarWindowManager.java
+			private void adjustScreenOrientation(State state) {
+				...
+				mLpChanged.screenOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
+  		}    	
+  		
+Caused by: java.lang.SecurityException: Permission Denial: opening provider com.google.android.apps.youtube.app.common.util.FileProviderCompat from ProcessRecord{bd1c845 16296:com.android.gallery3d/u0a48} (pid=16296, uid=10048) that is not exported from uid 10069
+分析：
+	在AndroidManifest.xml 中 Android:exported 属性，这个属性用于指示该服务是否能被其他程序应用组件调用或跟他交互； 取值为（true | false），
+	如果设置成true，则能够被调用或交互，否则不能；
+	设置为false时，只有同一个应用程序的组件或带有相同用户ID的应用程序才能启动或绑定该服务。
+	它的默认值是依赖于该服务所包含的过滤器
+        （1）如果没有过滤器则意味着该服务只能通过指定明确的类名来调用，也就是说该服务只能在应用程序内部使用（因为其他外部使用者不会知道该服务的类名），此时它的默认值是false
+        （2）如果至少包含了一个过滤器，则意味着该服务可以给外部的其他应用提供服务，因此默认值是true。
+ 	附： 这个属性不是限制把服务暴露给其他应用程序的唯一方法。还可以使用权限来限制能够跟该服务交互的外部实体  		
+ 	
+Android原生开机动画图片位置
+\frameworks\base\core\res\assets\images\...	
+ 	
+关机充电动画处理
+  对应的分辨率 坐标初始化
+  \vendor\mediatek\proprietary\external\libshowlogo\cust_display.h
+  计算动画、坐标位置
+  \vendor\mediatek\proprietary\external\libshowlogo\show_animation_common.c
+
+apn参数
+  kk/mediatek/frameworks/base/telephony/etc/apns-conf.xml
+  m/
+  
+待机电流，底电流 ，低电流问题分析
+1，开启mtklog 并 关闭mdlog，开始抓log
+2，log 里面搜索关键字，AlarmManager: wakeup alarm ， ActivityManager: Broadcast: Intent , PowerManagerService: releaseWakeLockInternal: 等
+3，main log中搜索
+   System.out: [socket] 可以看到哪些apk在做通信：后台通讯
+   [Posix_connect Debug]Process 搜索哪些进程联网操作,Posix_connect 这个关键字表示 apk 在发送数据。
+4, 系统RILJ一直申请锁 无法休眠 PowerManagerService: releaseWakeLockInternal
+  
+
+看起来是后台网络通信导致系统根本睡不下去，
+整个过程系统就没睡下去，还请您dump出clk这边check一下，谢谢！
+adb shell dumpsys batterystats > battersystats.log            
+adb shell  cat /sys/kernel/debug/wakeup_sources >  wakeup_sources.log 
+
+adb shell 启动 mtklog
+adb shell am start -n com.mediatek.engineermode/com.mediatek.engineermode.EngineerMode
+
+N 平台 WIFI 跳不过
+# Overrides
+PRODUCT_PROPERTY_OVERRIDES += \
+    ro.setupwizard.require_network=any \
+    ro.setupwizard.mode=OPTIONAL \
+    ro.com.google.gmsversion=7.0_r5
+改为：
+PRODUCT_PROPERTY_OVERRIDES += \
+    ro.setupwizard.require_network=
+    ro.setupwizard.mode=OPTIONAL \
+    ro.com.google.gmsversion=7.0_r5
+方案二：
+diff --git a/core/java/android/os/AsyncTask.java b/core/java/android/os/AsyncTask.java
+index 521df28..99fd4ad 100644
+--- a/core/java/android/os/AsyncTask.java
++++ b/core/java/android/os/AsyncTask.java
+@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
+ import java.util.concurrent.TimeoutException;
+ import java.util.concurrent.atomic.AtomicBoolean;
+ import java.util.concurrent.atomic.AtomicInteger;
++import android.util.Log;
+ 
+ /**
+  * <p>AsyncTask enables proper and easy use of the UI thread. This class allows to
+@@ -178,7 +179,7 @@ import java.util.concurrent.atomic.AtomicInteger;
+  * {@link #THREAD_POOL_EXECUTOR}.</p>
+  */
+ public abstract class AsyncTask<Params, Progress, Result> {
+-    private static final String LOG_TAG = "AsyncTask";
++    private static final String LOG_TAG = "AsyncTask_linhui";
+ 
+     private static final int CPU_COUNT = Runtime.getRuntime().availableProcessors();
+     private static final int CORE_POOL_SIZE = CPU_COUNT + 1;
+@@ -479,6 +480,19 @@ public abstract class AsyncTask<Params, Progress, Result> {
+      * @see #onCancelled(Object)
+      */
+     public final boolean cancel(boolean mayInterruptIfRunning) {
++        Log.i("linhui","cancel , mayInterruptIfRunning= "+mayInterruptIfRunning);
++        Log.i("linhui","call stack ==>",new Throwable());
++
++        java.lang.StackTraceElement stackTrace[] = new java.lang.Throwable().getStackTrace();
++        for(int i= 0;i < stackTrace.length; i ++) {
++            String classMethodName = stackTrace[i].getClassName()+"."+stackTrace[i].getMethodName();
++            //"com.google.android.gms.auth.frp.FrpClient.isChallengeSupported"
++            if(classMethodName.contains("com.google.android.setupwizard.util.FrpHelper")) {
++                Log.w(LOG_TAG,"SetupWizard canceled this task, getStatus()= "+getStatus());
++                return false;
++            }
++        }
++
+         mCancelled.set(true);
+         return mFuture.cancel(mayInterruptIfRunning);
+     }
+	 
+	 
+String.xml 中定义字符串颜色，样式
+<string name="exchange_txt_hint"><Data><![CDATA[请使用<font color="#ff0000"><b>%1$s</b></font>牛兑换<font color="#00ff00"><b>%2$s</b></font>%3$s 上网时长]]></Data></string>
+
+
+补丁日期
+build/core/version_defaults.mk:     
+PLATFORM_SECURITY_PATCH := 2017-03-05
+
+
+facebook 网页版本
+http://m.facebook.com
+
+twitter 网页版本
+http://mobile.twitter.com
+
+
+
+[FAQ18053]相机开着torch 闪光灯 取消打闪拍照时预闪功能。拍照时 闪光灯常亮
+客户客制化行为，在拍照前已经打开了闪光灯，当在低亮的环境下，会触发打闪拍照。为了避免在已经打开闪光灯的情况下，再执行预闪主闪。客户要求去掉预闪主闪的行为。
+[SOLUTION]
+./hardware/mtkcam/legacy/platform/mt6735m/core/featureio/pipe/aaa/aaa_hal.cpp   的 isNeedFiringFlash加上红色代码：
+MINT32 Hal3A::isNeedFiringFlash(MBOOL bEnCal)
+{
+    if (LIB3A_FLASH_MODE_FORCE_TORCH == FlashMgr::getInstance().getFlashMode(m_i4SensorDev))
+        return 0;
+.........
+}
+
+
+camera 快门声异常
+alps\frameworks\base\core\java\android\hardware\Camera.java
+   public final boolean enableShutterSound(boolean enabled) {
+     //if (audioService.isCameraSoundForced()) return false;
+alps\frameworks\base\services\core\java\com\android\server\audio\AudioService.java
+   private boolean readCameraSoundForced() {
+      return false；
+alps\vendor\mediatek\proprietary\packages\apps\Camera\src\com\android\camera\CameraManager.java
+   private static final int ENABLE_SHUTTER_SOUND = 201;
+   private static final int DISABLE_SHUTTER_SOUND = 202;	  
+   
+
+设置-开发者选项-后台进程限制：当前默认值为“标准限制”,如何修改这个默认值？
+ActivityManagerService.java (alps\mediatek\custom\bsp_overlay\frameworks\base\services\java\com\android\server\am)  中
+int mProcessLimitOverride 的值即可。 
+
+
+通话 接通震动，接通响beep音
+/trunk/packages/services/Telecomm/src/com/android/server/telecom/InCallToneMonitor.java
+    @Override
+    public void onCallStateChanged(Call call, int oldState, int newState) {
+        if (mCallsManager.getForegroundCall() != call) {
+            // We only play tones for foreground calls.
+            return;
+        }
+        //modify by lxy for UNI_PHONE_ACTIVE_BEEP start 
+        	if((oldState == CallState.DIALING && newState == CallState.ACTIVE) || (oldState == CallState.RINGING && newState == CallState.ACTIVE)){
+        		int toneToPlay = InCallTonePlayer.TONE_CALL_ENDED;
+        		mPlayerFactory.createPlayer(toneToPlay).startTone();
+        		return;
+        	}
+        //modify by lxy for UNI_PHONE_ACTIVE_BEEP end
+        
+		
+		
+whatsapp 中不能录制视频，可能是系统没有配置到 whatsapp 支持的视频尺寸。
+可根据 log 查找原因 CameraSource: Video dimension (864x480) is unsupported		
+
+开机的时候，立马切换到 横屏显示
+/frameworks/base/services/core/java/com/android/server/wm/WindowManagerService.java
+    public void performEnableScreen() {
+			...........
+                mBootAnimationStopped = true;
+            }
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+            //mobidy by lxy for ap01 start
+				try{
+					mRotation = Surface.ROTATION_90;
+					updateRotationUnchecked(true, true);
+					updateDisplayAndOrientationLocked();
+					notifyWindowsChanged();
+				}catch(Exception e){
+					e.printStackTrace();
+				}
+			////mobidy by lxy for ap01 end
+//////////////////////////////////////////////////////////////////////////////////////////////////////        	
+            if (!mForceDisplayEnabled && !checkBootAnimationCompleteLocked()) {
+                if (DEBUG_BOOT) Slog.i(TAG, "performEnableScreen: Waiting for anim complete");
+                return;
+            }
+			.......................
+			
+			
+
+gms 耗电快问题分析
+According to the phenomenon
+com.google.android.gms messaging_service_start_wakelock acquire wakelock when first time boot and won’t release until network connected.
+Issue can’t reproduce after reboot.
+
+According to the log
+00:10:25.160  3388  6258 D PowerManagerService: acquireWakeLockInternal: lock=154425748, flags=0x1, tag="messaging_service_start_wakelock", ws=WorkSource{10017 com.google.android.gms}, uid=10017, pid=6936 packageName=com.google.android.gms
+12:15:43.042  3388  3495 D PowerManagerService: onReceive SCREEN_OFF
+12:15:43.042  3388  3495 D PowerManagerService: onReceive SCREEN_OFF remain wakelock:android.os.BinderProxy@9345994 flag:1 tag:messaging_service_start_wakelock pkg:com.google.android.gms uid:10017 pid:6936
+
+This issue only reproduce in Android 6.0 GMS r11, r12 and 7.0 GMS r5, r6, r7. Google play services 10.0.84 and 10.2.98 version.
+Google play services 9.8.79 can’t reproduce this issue.
+
+messaging_service_start_wakelock belong to Google play services need trace by google. Google issue trackerhttps://issuetracker.google.com/issues/37687421
+
+
+
+
+测试验证谷歌安全补丁的apk ： Stagefright detector.apk (需要翻墙谷歌下载最新版本测试)
+
+
+
+默认 IPV4V6 或者 IPV4
+IP 是表示 IPV4， IPV4V6 是 IPV4V6
+alps\packages\providers\TelephonyProvider\src\com\android\providers\telephony\TelephonyProvider.java
++ "protocol TEXT DEFAULT IP,"
++ "roaming_protocol TEXT DEFAULT IP,";
+
+
+上不了网络 或者 彩信发布出去，一般是 apn 参数配置不对
+1，对比检查同一个mccmnc sim卡在别的机器上，apn 显示的情况，对比差异
+2，修改 apns-conf.xml 默认的参数类型
+3，如果修改的内容太多，可以考虑在代码中，初始化的时候，默认修改 TelephonyProvider.java loadApns(db, confparser);
+
+
+
+查看手机系统空间，容量
+adb shell df
+
+
+android 数据库快速查找 有图片的 文件夹 名称以及其中一张图片的 path
+		Cursor mCursor = getContentResolver().query(
+				mImageUri, 
+				null, 
+				" mime_type='image/jpeg' or mime_type='image/png' ) group by (bucket_display_name ",
+				null,
+				MediaStore.Images.Media.DATE_MODIFIED);
+
+
+背景透明，主题透明，实际上是让activity 在后台运行，适用于只运行activity但不需要显示界面
+android:theme="@android:style/Theme.NoDisplay"
+
+
+创建隐藏wifi 热点
+\packages\apps\Settings\src\com\mediatek\wifi\hotspot\TetherWifiSettings.java
+		mWifiConfig.hiddenSSID = true;----隐藏
+		mWifiManager.setWifiApConfiguration(mWifiConfig);
+
+
+
+默认桌面壁纸不滑动
+Launcher3\src\com\android\launcher3\util\WallpaperUtils.java
+	public static Point getDefaultWallpaperSize(Resources res, WindowManager windowManager) {
+			.......
+			final int defaultWidth, defaultHeight;
+            Point realSize = new Point();
+            windowManager.getDefaultDisplay().getRealSize(realSize);
+			defaultWidth = realSize.x;
+            defaultHeight = realSize.y;
+			sDefaultWallpaperSize = new Point(defaultWidth, defaultHeight);
+		
+广播恢复出厂设置，测试ok
+adb shell am broadcast -a "android.intent.action.MASTER_CLEAR"
+
+广播重启，测试ok
+	Intent i = new Intent(Intent.ACTION_REBOOT);
+    i.putExtra("nowait", 1);
+	i.putExtra("interval", 1);
+	i.putExtra("window", 0);
+	sendBroadcast(i);
+adb shell am broadcast -a "android.intent.action.REBOOT" --ei "nowait" 1 --ei "interval" 1 --ei "window" 0
+															
+广播关机，未测试
+	Intent intent = new Intent(Intent.ACTION_REQUEST_SHUTDOWN);
+	intent.putExtra(Intent.EXTRA_KEY_CONFIRM, false);
+	intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+	startActivity(intent);
+
+	
+设置时区
+	设置系统的日期时间和时区，需要 系统权限和系统签名，android:sharedUserId="android.uid.system" 需要在manifest文件中添加相应的权限
+		<uses-permission android:name="android.permission.WRITE_SETTINGS"/>
+		<uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS"/>
+	判断系统使用的是24小时制还是12小时制 boolean is24Hour =  DateFormat.is24HourFormat(mContext);
+	android.provider.Settings.System.putString(mContext.getContentResolver(), android.provider.Settings.System.TIME_12_24, "24");
+	android.provider.Settings.System.putString(mContext.getContentResolver(), android.provider.Settings.System.TIME_12_24, "12");
+	android.provider.Settings.Global.getInt(mContext.getContentResolver(),    android.provider.Settings.Global.AUTO_TIME_ZONE) > 0;
+	android.provider.Settings.Global.putInt(mContext.getContentResolver(),    android.provider.Settings.Global.AUTO_TIME_ZONE, checked);
+	android.provider.Settings.Global.getInt(mContext.getContentResolver(),    android.provider.Settings.Global.AUTO_TIME) > 0;
+	android.provider.Settings.Global.putInt(mContext.getContentResolver(),    android.provider.Settings.Global.AUTO_TIME, checked);
+	
+设置系统日期
+	public void setSysDate(int year,int month,int day){
+		Calendar c = Calendar.getInstance();
+		c.set(Calendar.YEAR, year);
+		c.set(Calendar.MONTH, month);
+		c.set(Calendar.DAY_OF_MONTH, day);
+		long when = c.getTimeInMillis();
+		if(when / 1000 < Integer.MAX_VALUE){
+			((AlarmManager)mContext.getSystemService(Context.ALARM_SERVICE)).setTime(when);
+		}
+	}
+设置系统时间
+	public void setSysTime(int hour,int minute){
+		Calendar c = Calendar.getInstance();
+		c.set(Calendar.HOUR_OF_DAY, hour);
+		c.set(Calendar.MINUTE, minute);
+		c.set(Calendar.SECOND, 0);
+		c.set(Calendar.MILLISECOND, 0);
+		long when = c.getTimeInMillis();
+		if(when / 1000 < Integer.MAX_VALUE){
+			((AlarmManager)mContext.getSystemService(Context.ALARM_SERVICE)).setTime(when);
+		}
+	}
+设置系统时区
+	public void setTimeZone(String timeZone){
+		final Calendar now = Calendar.getInstance();
+		TimeZone tz = TimeZone.getTimeZone(timeZone);
+		now.setTimeZone(tz);
+	}
+获取系统当前的时区
+	public String getDefaultTimeZone(){
+		return TimeZone.getDefault().getDisplayName();
+	}
+
+		
+
+呼吸灯，通知指示灯 控制
+	闪烁（先清除，然后开启timer，分别设置 on 和 off 的时间值）
+		root@tx6737m_35g_b602:/ # echo none  > /sys/class/leds/green/trigger
+		root@tx6737m_35g_b602:/ # echo timer > /sys/class/leds/green/trigger
+		root@tx6737m_35g_b602:/ # echo 500   > /sys/class/leds/green/delay_on
+		root@tx6737m_35g_b602:/ # echo 500   > /sys/class/leds/green/delay_off
+
+	设置常亮 （先清除，大于 0 就可以，但亮度不一样，建议 255 最亮）
+		root@tx6737m_35g_b602:/ # echo none > /sys/class/leds/green/trigger
+		root@tx6737m_35g_b602:/ # echo 255  > /sys/class/leds/green/brightness
+
+	设置不亮（先清除，等于 0 就可以）
+		root@tx6737m_35g_b602:/ # echo none  > /sys/class/leds/green/trigger
+		root@tx6737m_35g_b602:/ # echo 0     > /sys/class/leds/green/brightness
+
+代码实现（节点权限，没有实现，改用代码处理）
+	http://blog.csdn.net/mcgrady_tracy/article/details/41285213
+	Notification 指示灯 呼吸灯 亮屏时也能够显示修改
+	\frameworks\base\services\core\java\com\android\server\notification\NotificationManagerService.java
+		void updateLightsLocked()
+		{.......
+			if (ledNotification == null || mInCall || mScreenOn || mDmLock || mPplLock) {
+		---》改成
+			if (ledNotification == null) {
+			.....
+	\frameworks\base\services\core\java\com\android\server\lights\LightsService.java
+		setLight_native(mNativePointer, mId, color, mode, onMS, offMS, brightnessMode);
+	\frameworks\base\services\core\jni\com_android_server_lights_LightsService.cpp
+		setLight_native  --- devices->lights[light]->set_light(devices->lights[light], &state);
+	\vendor\mediatek\proprietary\hardware\liblights\lights.c
+		handle_speaker_battery_locked{
+			....这个方法会判断是否在充电，充电的时候有优先级，对于notification就不会处理了，
+			set_speaker_light_locked(dev, &g_notification); 需要把这个给放开
+		}
+		set_speaker_light_locked(struct light_device_t* dev, struct light_state_t const* state){
+			.............同时控制三色灯 呼吸灯（红灯只控制红灯，不会同时关闭其他灯）
+			    if (red) {
+					//blink_green(0, 0, 0);
+					//blink_blue(0, 0, 0);
+					blink_red(red, onMS, offMS);
+				}else{
+					blink_red(0, 0, 0);
+				}
+				if (green) {
+					//        blink_red(0, 0, 0);
+					//        blink_blue(0, 0, 0);
+					blink_green(green, onMS, offMS);
+				}else{
+					blink_green(0, 0, 0);
+				}
+				if (blue) {
+					//        blink_red(0, 0, 0);
+					//        blink_green(0, 0, 0);
+					blink_blue(blue, onMS, offMS);
+				}else{
+					blink_blue(0, 0, 0);
+				}
+				if(alpha){
+				}
+				else {
+					blink_red(0, 0, 0);
+					blink_green(0, 0, 0);
+					blink_blue(0, 0, 0);
+				}
+			...............		
+		}
+	控制实际的实现方法
+			Notification notification = builder.build();
+			NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+			notification.ledARGB = 0xFFffffff; 三色灯同时亮，0xFF00ffff: gb两灯亮.....
+			notification.ledOnMS = 500; 闪烁亮
+			notification.ledOffMS = 500; 闪烁灭
+			notification.flags = Notification.FLAG_SHOW_LIGHTS;
+			manager.notify(1001, notification);
+
+			
+			
+USSD  弹出框，输入框 ，输入显示
+	/packages/services/Telephony/res/layout/dialog_ussd_response.xml
+	
+外置SD卡写权限
+	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_MEDIA_STORAGE" />	
+	
+	
+最近运行的程序截屏 模糊
+	\frameworks\base\packages\SystemUI\src\com\mediatek\systemui\statusbar\util\FeatureOptions.java	
+		return "true".equals(SystemProperties.get(propertyString, "false"));
+	
+	
+chrome 默认主页，默认竹签
+	http://blog.csdn.net/lisineng/article/details/48716329	
+	
+	
+打开串口log
+	bootable/bootloader/lk/app/mt_boot.c 修改 printk.disable_uart=0 表示开启 串口log
+	sprintf(cmdling, "%s%s", cmdline, "printk.disable_uart=1")  
+	
+重启语音不消失
+alps/frameworks/opt/telephony/src/java/com/android/internal/telephony/GsmCdmaPhone.java
+@Override
+    public void updateVoiceMail() {
+        if (isPhoneTypeGsm()) {
+            int countVoiceMessages = 0;
+            IccRecords r = mIccRecords.get();
+            if (r != null) {
+                // get voice mail count from SIM
+                countVoiceMessages = r.getVoiceMessageCount();
+            }
+            int countVoiceMessagesStored = getStoredVoiceMessageCount();
+            //add
+            if(android.provider.UnioneFeature.UNI_CANCEL_VOICEMAIL_RECEIVES_TEN){
+            	 if (countVoiceMessages == -1) {
+                countVoiceMessages = countVoiceMessagesStored;
+            }
+            }else{//end
+            if (countVoiceMessages == -1 && countVoiceMessagesStored != 0) {
+                countVoiceMessages = countVoiceMessagesStored;
+            }
+          }//end
+            logd("updateVoiceMail countVoiceMessages = " + countVoiceMessages
+                    + " subId " + getSubId());
+            setVoiceMessageCount(countVoiceMessages);
+        } else {
+            setVoiceMessageCount(getStoredVoiceMessageCount());
+        }
+    }
+alps/frameworks/opt/telephony/src/java/com/android/internal/telephony/uicc/SIMRecords.java
+ public int getVoiceMessageCount() {
+        boolean voiceMailWaiting = false;
+        int countVoiceMessages = 0;
+        if (mEfMWIS != null) {
+            // Use this data if the EF[MWIS] exists and
+            // has been loaded
+            // Refer TS 51.011 Section 10.3.45 for the content description
+            voiceMailWaiting = ((mEfMWIS[0] & 0x01) != 0);
+            countVoiceMessages = mEfMWIS[1] & 0xff;
+
+            if (voiceMailWaiting && countVoiceMessages == 0) {
+                // Unknown count = -1
+                countVoiceMessages = -1;
+            }
+            if(DBG) log(" VoiceMessageCount from SIM MWIS = " + countVoiceMessages);
+        } else if (mEfCPHS_MWI != null) {
+            // use voice mail count from CPHS
+            int indicator = (int) (mEfCPHS_MWI[0] & 0xf);
+
+            // Refer CPHS4_2.WW6 B4.2.3
+            if (indicator == 0xA) {
+                // Unknown count = -1
+                countVoiceMessages = -1;
+            } else if (indicator == 0x5) {
+                countVoiceMessages = 0;
+            }
+            if(DBG) log(" VoiceMessageCount from SIM CPHS = " + countVoiceMessages);
+            //add start
+        }else if(android.provider.UnioneFeature.UNI_CANCEL_VOICEMAIL_RECEIVES_TEN && mEfMWIS == null && mEfCPHS_MWI == null ){
+            countVoiceMessages =-1;
+        }
+        //add end
+        return countVoiceMessages;
+    }
+    开机震动
+    /trunk/project_config/m6/prjconf/other/vendor/mediatek/proprietary/bootable/bootloader/lk/platform/mt6735/platform.c
+    #endif
+	drv_video_init();
+	vibr_Enable_HW();//open vibr
+    mdelay(3000); //times:80 ms modify
+    vibr_Disable_HW();//close vibr
+	mboot_common_load_logo((unsigned long)mt_get_logo_db_addr_pa(), "logo");
+
+MTK_FACTORY_MODE_IN_GB2312 = no 开机工厂模式（开机键+音量下键）默认英语
+MTK_FULLSCREEN_SWITCH_SUPPORT = yes 全屏模式
+

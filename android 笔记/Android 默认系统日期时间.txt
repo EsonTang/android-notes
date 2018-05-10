@@ -1,0 +1,64 @@
+[FAQ04318]如何修改出厂默认日期和默认时区	
+
+手机第一次开机默认是没有定制时区的（默认是GMT：+00:00），但是会有一个默认日期，如2013年1月1日。
+如何客制化默认时区以及时间呢？
+[Solution]
+
+
+\mediatek\factory\src\test\ftm_rtc.cpp
+rtc_init_tm(&tm, 2014, 12, 31, 23, 59, 57);
+
+一、修改默认时间
+1、修改RTC默认日期：
+Android L之前：
+\alps\mediatek\custom\[project]\preloader\inc\cust_rtc.h
+\alps\mediatek\custom\[project]\kernel\rtc\rtc\rtc-mt65XX.h
+
+Android L：
+bootable\bootloader\preloader\custom\[project]\inc\cust_rtc.h
+#define RTC_DEFAULT_YEA         2012
+#define RTC_DEFAULT_MTH        2
+#define RTC_DEFAULT_DOM        1
+
+2、修改默认日期：
+framework\base\services\java\com\android\server\NetworkTimeUpdateService.java
+systemReady()
+……
+       if(isFirstBoot){
+          Time today = new Time(Time.getCurrentTimezone());
+          today.setToNow();   // 将时间恢复到RTC时间
+          today.set(1, 0, mDefaultYear ); //设立出厂默认日期，mDefaultYear是默认年份
+          
+如果想恢复出厂设置后，系统时间不变，可使用today.setToNow();
+如果想恢复出厂设置后，系统时间也恢复成出厂时间，可使用today.set(1, 0, mDefaultYear );
+这个today.set方法有6个参数的重载，可以精确到秒，具体使用方法请自行查询API，所以在这里设置系统默认时间就可以了。
+ 
+如果要設置出廠默認年份需要修改
+1)mediatek\frameworks\base\res\res\values\config.xml将default_restore_year 修改成 2013
+（Android L：vendor\mediatek\proprietary\frameworks\base\res\res\values）
+       <!-- default year for first power on-->
+       <integer name="default_restore_year">2013</integer>
+ 
+2)frameworks\base\services\java\com\android\server\NetworkTimeUpdateService.java
+       if(today.year <= 2010){ //删除此行判断条件
+             today.set(today.monthDay, today.month, 2013);
+             Log.d(TAG, "Set the year to 2013");
+             SystemProperties.set(BOOT_SYS_PROPERTY, "false");
+             SystemClock.setCurrentTimeMillis(today.toMillis(false));
+       }
+       
+修改后的表现可通过Setting菜单->时间日期设置):
+
+3、修改默认时区：
+在系统属性中增加下面字段(假设改为Moscow)
+Android L之前：
+mediatek\config\[project]\system.prop
+
+Android L:
+device\mediatek\[project]\system.prop
+
+persist.sys.timezone = Europe/Moscow
+注意：默认时区的修改会影响默认时间的值，会根据与格林尼治标准时间差来更新时间，这是正常现象。
+如当前设置为中国标准时间GMT+8:00，则手机的出厂时间会变为8:00。
+
+恢复出厂设置日期 \alps\mediatek\frameworks\base\res\res\values\config.xml   
